@@ -17,7 +17,7 @@ namespace ObjectDeliverer.PacketRule
         public delegate void CNPacketRuleMadeSendBuffer(Span<byte> sendBuffer);
 		public event CNPacketRuleMadeSendBuffer MadeSendBuffer;
 
-		public delegate void CNPacketRuleMadeReceiveBuffer(byte[] receiveBuffer);
+		public delegate void CNPacketRuleMadeReceiveBuffer(Span<byte> receiveBuffer);
 		public event CNPacketRuleMadeReceiveBuffer MadeReceiveBuffer;
 
 
@@ -30,16 +30,16 @@ namespace ObjectDeliverer.PacketRule
 
 		}
 
-        public abstract void MakeSendPacket(byte[] bodyBuffer);
+        public abstract void MakeSendPacket(Span<byte> bodyBuffer);
 
-        public abstract void NotifyReceiveData(byte[] dataBuffer);
+        public abstract void NotifyReceiveData(Span<byte> dataBuffer);
 
 		protected void DispatchMadeSendBuffer(Span<byte> sendBuffer)
 		{
 			MadeSendBuffer?.Invoke(sendBuffer);
 		}
 
-		protected void DispatchMadeReceiveBuffer(byte[] receiveBuffer)
+		protected void DispatchMadeReceiveBuffer(Span<byte> receiveBuffer)
 		{
 			MadeReceiveBuffer?.Invoke(receiveBuffer);
 		}

@@ -12,7 +12,7 @@ namespace ObjectDeliverer
         public event ObjectDelivererManagerConnected Connected;
         public delegate void ObjectDelivererManagerDisconnected(ObjectDelivererProtocol delivererProtocol);
         public event ObjectDelivererManagerDisconnected Disconnected;
-        public delegate void ObjectDelivererManagerReceiveData(ObjectDelivererProtocol delivererProtocol, byte[] dataBuffer);
+        public delegate void ObjectDelivererManagerReceiveData(ObjectDelivererProtocol delivererProtocol, Span<byte> dataBuffer);
         public event ObjectDelivererManagerReceiveData Received;
 
         private ObjectDelivererProtocol? CurrentProtocol;
@@ -46,7 +46,7 @@ namespace ObjectDeliverer
             CurrentProtocol.Start();
         }
 
-        private void DeliveryBox_RequestSend(ObjectDelivererProtocol? destination, byte[] sendBuffer)
+        private void DeliveryBox_RequestSend(ObjectDelivererProtocol? destination, Span<byte> sendBuffer)
         {
             if (destination != null)
             {
@@ -58,7 +58,7 @@ namespace ObjectDeliverer
             }
         }
 
-        private void CurrentProtocol_ReceiveData(ObjectDelivererProtocol delivererProtocol, byte[] receivedBuffer)
+        private void CurrentProtocol_ReceiveData(ObjectDelivererProtocol delivererProtocol, Span<byte> receivedBuffer)
         {
             Received?.Invoke(delivererProtocol, receivedBuffer);
             DeliveryBox?.NotifyReceiveBuffer(delivererProtocol, receivedBuffer);
@@ -94,7 +94,7 @@ namespace ObjectDeliverer
 			CurrentProtocol = null;
 		}
 
-		public void Send(byte[] DataBuffer)
+		public void Send(Span<byte> DataBuffer)
 		{
 			if (CurrentProtocol == null) return;
 			if (disposedValue) return;
@@ -102,7 +102,7 @@ namespace ObjectDeliverer
 			CurrentProtocol.Send(DataBuffer);
 		}
 
-		public void SendTo(byte[] DataBuffer, ObjectDelivererProtocol Target)
+		public void SendTo(Span<byte> DataBuffer, ObjectDelivererProtocol Target)
 		{
 			if (CurrentProtocol == null) return;
 			if (disposedValue) return;

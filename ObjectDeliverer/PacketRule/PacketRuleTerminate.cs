@@ -5,45 +5,41 @@ namespace ObjectDeliverer.PacketRule
 {
     public class PacketRuleTerminate : PacketRuleBase
     {
-        private byte[] Terminate = new byte[0];
+        public byte[] Terminate { get; set; } = new byte[0];
         private GrowBuffer BufferForSend = new GrowBuffer();
         private GrowBuffer ReceiveTempBuffer = new GrowBuffer();
-        private byte[] BufferForReceive = new byte[0];
+        private GrowBuffer BufferForReceive = new GrowBuffer();
 
         public override void Initialize()
         {
             BufferForSend = new GrowBuffer();
             ReceiveTempBuffer = new GrowBuffer();
-            BufferForReceive = new byte[1024];
+            BufferForReceive = new GrowBuffer();
         }
 
-        public override void MakeSendPacket(byte[] bodyBuffer)
+        public override void MakeSendPacket(Span<byte> bodyBuffer)
         {
             var SendSize = bodyBuffer.Length + Terminate.Length;
             BufferForSend.Reset(SendSize);
 
-            BufferForSend.CopyFromArray(bodyBuffer, 0, bodyBuffer.Length, 0);
-            BufferForSend.CopyFromArray(Terminate, bodyBuffer.Length, Terminate.Length, 0);
+            BufferForSend.CopyFrom(bodyBuffer, 0);
+            BufferForSend.CopyFrom(Terminate, bodyBuffer.Length);
 
-
-            Buffer.BlockCopy(bodyBuffer, 0, BufferForSend, 0, bodyBuffer.Length);
-            Buffer.BlockCopy(Terminate, 0, BufferForSend, bodyBuffer.Length, Terminate.Length);
-
-            DispatchMadeSendBuffer(BufferForSend.Buffer);
+            DispatchMadeSendBuffer(BufferForSend.SpanBuffer);
         }
 
-        public override void NotifyReceiveData(byte[] dataBuffer)
+        public override void NotifyReceiveData(Span<byte> dataBuffer)
         {
-            ReceiveTempBuffer += DataBuffer;
+            ReceiveTempBuffer.Add(dataBuffer);
 
-            int32 findIndex = -1;
+            int findIndex = -1;
 
             while (true)
             {
-                for (int i = 0; i <= ReceiveTempBuffer.Num() - Terminate.Num(); ++i)
+                for (int i = 0; i <= ReceiveTempBuffer.Length - Terminate.Length; ++i)
                 {
                     bool notEqual = false;
-                    for (int j = 0; j <= Terminate.Num() - Terminate.Num(); ++j)
+                    for (int j = 0; j <= Terminate.Length; ++j)
                     {
                         if (ReceiveTempBuffer[i + j] != Terminate[j])
                         {
@@ -64,11 +60,11 @@ namespace ObjectDeliverer.PacketRule
                     return;
                 }
 
-                BufferForReceive.SetNum(findIndex, false);
-                FMemory::Memcpy(BufferForReceive.GetData(), ReceiveTempBuffer.GetData(), findIndex);
-                DispatchMadeReceiveBuffer(BufferForReceive);
+                BufferForReceive.Reset(findIndex);
+                BufferForReceive.CopyFrom(ReceiveTempBuffer.AsSpan(0, findIndex));
+                DispatchMadeReceiveBuffer(BufferForReceive.SpanBuffer);
 
-                ReceiveTempBuffer.RemoveAt(0, findIndex + Terminate.Num());
+                ReceiveTempBuffer.RemoveAt(0, findIndex + Terminate.Length);
 
                 findIndex = -1;
             }

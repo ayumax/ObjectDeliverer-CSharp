@@ -10,12 +10,12 @@ namespace ObjectDeliverer.PacketRule
 
         }
 
-        public override void MakeSendPacket(byte[] bodyBuffer)
+        public override void MakeSendPacket(Span<byte> bodyBuffer)
         {
             DispatchMadeSendBuffer(bodyBuffer);
         }
 
-        public override void NotifyReceiveData(byte[] dataBuffer)
+        public override void NotifyReceiveData(Span<byte> dataBuffer)
         {
             DispatchMadeReceiveBuffer(dataBuffer);
         }
@@ -23,7 +23,7 @@ namespace ObjectDeliverer.PacketRule
         public override int WantSize => 0;
 
 
-        public override PacketRuleBase Clone() => PacketRuleFactory::CreatePacketRuleNodivision();
+        public override PacketRuleBase Clone() => PacketRuleFactory.CreatePacketRuleNodivision();
         
     }
 }

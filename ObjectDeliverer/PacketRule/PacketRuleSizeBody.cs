@@ -13,31 +13,25 @@ namespace ObjectDeliverer.PacketRule
         EReceiveMode ReceiveMode = EReceiveMode.Size;
 
         private uint BodySize = 0;
-        private int ReceiveBufferPosition = 9;
 
-        private byte[] BufferForSend = new byte[0];
+        private GrowBuffer BufferForSend = new GrowBuffer();
 
         public int SizeLength { get; set; } = 4;
         public ECNBufferEndian SizeBufferEndian { get; set; } = ECNBufferEndian.Big;
 
         public override void Initialize()
         {
-            BufferForSend = new byte[1024];
+            BufferForSend.Reset(1024);
             ReceiveMode = EReceiveMode.Size;
             BodySize = 0;
         }
 
-        public override void MakeSendPacket(byte[] bodyBuffer)
+        public override void MakeSendPacket(Span<byte> bodyBuffer)
         {
             var BodyBufferNum = bodyBuffer.Length;
             var SendSize = BodyBufferNum + SizeLength;
 
-            if (BufferForSend.Length < SendSize)
-            {
-                BufferForSend = new byte[1024 * ((SendSize / 1024) + 1)];
-            }
-
-            var bufferForSendSpan = new Span<byte>(BufferForSend, 0, SendSize);
+            BufferForSend.Reset(SendSize);
 
             for (int i = 0; i < SizeLength; ++i)
             {
@@ -54,12 +48,12 @@ namespace ObjectDeliverer.PacketRule
                 BufferForSend[i] = (byte)((BodyBufferNum >> offset) & 0xFF);
             }
 
-            Buffer.BlockCopy(bodyBuffer, 0, BufferForSend, SizeLength, BodyBufferNum);
+            BufferForSend.CopyFrom(bodyBuffer, SizeLength);
 
-            DispatchMadeSendBuffer(bufferForSendSpan);
+            DispatchMadeSendBuffer(BufferForSend.SpanBuffer);
         }
 
-        public override void NotifyReceiveData(byte[] dataBuffer)
+        public override void NotifyReceiveData(Span<byte> dataBuffer)
         {
             if (ReceiveMode == EReceiveMode.Size)
             {
@@ -71,7 +65,7 @@ namespace ObjectDeliverer.PacketRule
         }
 
 
-        public void OnReceivedSize(byte[] dataBuffer)
+        public void OnReceivedSize(Span<byte> dataBuffer)
         {
             BodySize = 0;
             for (int i = 0; i < SizeLength; ++i)
@@ -91,7 +85,7 @@ namespace ObjectDeliverer.PacketRule
             ReceiveMode = EReceiveMode.Body;
         }
 
-        public void OnReceivedBody(byte[] dataBuffer)
+        public void OnReceivedBody(Span<byte> dataBuffer)
         {
             DispatchMadeReceiveBuffer(dataBuffer);
 

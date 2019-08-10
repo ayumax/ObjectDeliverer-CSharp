@@ -16,14 +16,14 @@ namespace ObjectDeliverer.DeliveryBox
 
 		}
 
-		public override void NotifyReceiveBuffer(ObjectDelivererProtocol fromObject, byte[] dataBuffer)
+		public override void NotifyReceiveBuffer(ObjectDelivererProtocol fromObject, Span<byte> dataBuffer)
 		{
-            var createdObj = JsonSerializer.Deserialize<T>(dataBuffer);
+			var createdObj = JsonSerializer.Deserialize<T>(dataBuffer.ToArray());
 
-            if (createdObj != null)
-            {
-                Received?.Invoke(createdObj, fromObject);
-            }	
+			if (createdObj != null)
+			{
+				Received?.Invoke(createdObj, fromObject);
+			}	
 		}
 
 		public void Send(T messageObject)

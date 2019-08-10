@@ -7,23 +7,23 @@ namespace ObjectDeliverer.PacketRule
     {
         public int FixedSize { get; set; } = 128;
 
-        private byte[] BufferForSend = new byte[0];
+        private GrowBuffer BufferForSend = new GrowBuffer();
 
         public override void Initialize()
         {
-            BufferForSend = new byte[FixedSize];
+            BufferForSend = new GrowBuffer();
         }
 
-        public override void MakeSendPacket(byte[] bodyBuffer)
+        public override void MakeSendPacket(Span<byte> bodyBuffer)
         {
-            Array.Clear(BufferForSend, 0, BufferForSend.Length);
-            Buffer.BlockCopy(bodyBuffer, 0, BufferForSend, 0, Math.Min(bodyBuffer.Length, FixedSize));
+            BufferForSend.Clear();
+            BufferForSend.CopyFrom(bodyBuffer.Slice(0, Math.Min(bodyBuffer.Length, FixedSize)));
 
-            DispatchMadeSendBuffer(BufferForSend);
+            DispatchMadeSendBuffer(BufferForSend.SpanBuffer);
         }
 
 
-        public override void NotifyReceiveData(byte[] dataBuffer)
+        public override void NotifyReceiveData(Span<byte> dataBuffer)
         {
             DispatchMadeReceiveBuffer(dataBuffer);
         }

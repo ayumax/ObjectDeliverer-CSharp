@@ -10,7 +10,7 @@ namespace ObjectDeliverer.Protocol
         public event ObjectDelivererProtocolConnected Connected;
         public delegate void ObjectDelivererProtocolDisconnected(ObjectDelivererProtocol delivererProtocol);
         public event ObjectDelivererProtocolDisconnected Disconnected;
-        public delegate void ObjectDelivererProtocolReceiveData(ObjectDelivererProtocol delivererProtocol, byte[] receivedBuffer);
+        public delegate void ObjectDelivererProtocolReceiveData(ObjectDelivererProtocol delivererProtocol, Span<byte> receivedBuffer);
         public event ObjectDelivererProtocolReceiveData ReceiveData;
 
         protected PacketRuleBase? PacketRule;
@@ -27,7 +27,7 @@ namespace ObjectDeliverer.Protocol
         {
         }
 
-        public virtual void Send(byte[] dataBuffer)
+        public virtual void Send(Span<byte> dataBuffer)
         {
 
         }
@@ -42,7 +42,7 @@ namespace ObjectDeliverer.Protocol
             Disconnected?.Invoke(delivererProtocol);
         }
 
-        protected void DispatchReceiveData(ObjectDelivererProtocol delivererProtocol, byte[] receivedBuffer)
+        protected void DispatchReceiveData(ObjectDelivererProtocol delivererProtocol, Span<byte> receivedBuffer)
         {
             ReceiveData?.Invoke(delivererProtocol, receivedBuffer);
         }

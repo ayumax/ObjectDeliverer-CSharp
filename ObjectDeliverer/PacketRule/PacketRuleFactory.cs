@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
+using static ObjectDeliverer.PacketRule.PacketRuleBase;
 
 namespace ObjectDeliverer.PacketRule
 {
-    public class PacketRuleBase
+    public class PacketRuleFactory
     {
         public static PacketRuleFixedLength CreatePacketRuleFixedLength(int FixedSize) => new PacketRuleFixedLength() { FixedSize = FixedSize };
 

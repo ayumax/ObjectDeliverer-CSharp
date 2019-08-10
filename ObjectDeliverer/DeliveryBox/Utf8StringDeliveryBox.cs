@@ -21,7 +21,7 @@ namespace ObjectDeliverer.DeliveryBox
             DispatchRequestSend(destination, UTF8Encoding.UTF8.GetBytes(message));
         }
 
-        public override void NotifyReceiveBuffer(ObjectDelivererProtocol fromObject, byte[] receivedBuffer)
+        public override void NotifyReceiveBuffer(ObjectDelivererProtocol fromObject, Span<byte> receivedBuffer)
         {
             Received?.Invoke(UTF8Encoding.UTF8.GetString(receivedBuffer), fromObject);
         }
