@@ -5,7 +5,16 @@ namespace ObjectDeliverer.PacketRule
 {
 	public abstract class PacketRuleBase
 	{
-		public delegate void CNPacketRuleMadeSendBuffer(byte[] sendBuffer);
+        public enum ECNBufferEndian
+        {
+            /** Big Endian */
+            Big = 0,
+	        /** Little Endian */
+	        Little
+        };
+
+
+        public delegate void CNPacketRuleMadeSendBuffer(Span<byte> sendBuffer);
 		public event CNPacketRuleMadeSendBuffer MadeSendBuffer;
 
 		public delegate void CNPacketRuleMadeReceiveBuffer(byte[] receiveBuffer);
@@ -25,7 +34,7 @@ namespace ObjectDeliverer.PacketRule
 
         public abstract void NotifyReceiveData(byte[] dataBuffer);
 
-		protected void DispatchMadeSendBuffer(byte[] sendBuffer)
+		protected void DispatchMadeSendBuffer(Span<byte> sendBuffer)
 		{
 			MadeSendBuffer?.Invoke(sendBuffer);
 		}

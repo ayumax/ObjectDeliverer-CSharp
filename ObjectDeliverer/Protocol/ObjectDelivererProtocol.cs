@@ -56,7 +56,7 @@ namespace ObjectDeliverer.Protocol
             PacketRule.MadeReceiveBuffer += x => DispatchReceiveData(this, x);
         }
 
-        public abstract void RequestSend(byte[] dataBuffer);
+        public abstract void RequestSend(Span<byte> dataBuffer);
 
 
         #region IDisposable Support
