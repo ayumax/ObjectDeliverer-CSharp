@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace ObjectDeliverer.PacketRule
+namespace ObjectDeliverer.Utils
 {
-    class GrowBuffer
+    public class GrowBuffer
     {
         private byte[] InnerBuffer;
 

@@ -13,7 +13,7 @@ namespace ObjectDeliverer.Protocol
         public delegate void ObjectDelivererProtocolReceiveData(ObjectDelivererProtocol delivererProtocol, Span<byte> receivedBuffer);
         public event ObjectDelivererProtocolReceiveData ReceiveData;
 
-        protected PacketRuleBase? PacketRule;
+        protected PacketRuleBase PacketRule = PacketRuleFactory.CreatePacketRuleNodivision();
 
         public ObjectDelivererProtocol()
         {
@@ -32,17 +32,17 @@ namespace ObjectDeliverer.Protocol
 
         }
 
-        protected void DispatchConnected(ObjectDelivererProtocol delivererProtocol)
+        protected virtual void DispatchConnected(ObjectDelivererProtocol delivererProtocol)
         {
             Connected?.Invoke(delivererProtocol);
         }
 
-        protected void DispatchDisconnected(ObjectDelivererProtocol delivererProtocol)
+        protected virtual void DispatchDisconnected(ObjectDelivererProtocol delivererProtocol)
         {
             Disconnected?.Invoke(delivererProtocol);
         }
 
-        protected void DispatchReceiveData(ObjectDelivererProtocol delivererProtocol, Span<byte> receivedBuffer)
+        protected virtual void DispatchReceiveData(ObjectDelivererProtocol delivererProtocol, Span<byte> receivedBuffer)
         {
             ReceiveData?.Invoke(delivererProtocol, receivedBuffer);
         }

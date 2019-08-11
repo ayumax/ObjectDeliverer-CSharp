@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using ObjectDeliverer.Utils;
+
 
 namespace ObjectDeliverer.PacketRule
 {
@@ -12,9 +14,9 @@ namespace ObjectDeliverer.PacketRule
 
         public override void Initialize()
         {
-            BufferForSend = new GrowBuffer();
-            ReceiveTempBuffer = new GrowBuffer();
-            BufferForReceive = new GrowBuffer();
+            BufferForSend.Reset(0);
+            ReceiveTempBuffer.Reset(0);
+            BufferForReceive.Reset(0);
         }
 
         public override void MakeSendPacket(Span<byte> bodyBuffer)
