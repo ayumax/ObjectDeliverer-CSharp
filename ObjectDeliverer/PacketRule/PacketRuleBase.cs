@@ -1,10 +1,12 @@
+using ObjectDeliverer.Protocol;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace ObjectDeliverer.PacketRule
 {
-	public abstract class PacketRuleBase
-	{
+	public abstract class PacketRuleBase : IObservable<ReadOnlyMemory<byte>>
+    {
         public enum ECNBufferEndian
         {
             /** Big Endian */
@@ -13,35 +15,42 @@ namespace ObjectDeliverer.PacketRule
 	        Little
         };
 
-
-        public delegate void CNPacketRuleMadeSendBuffer(Span<byte> sendBuffer);
-		public event CNPacketRuleMadeSendBuffer MadeSendBuffer;
-
-		public delegate void CNPacketRuleMadeReceiveBuffer(Span<byte> receiveBuffer);
-		public event CNPacketRuleMadeReceiveBuffer MadeReceiveBuffer;
-
-
 		public abstract int WantSize { get; }
 
 		public abstract PacketRuleBase Clone();
 
-		public virtual void Initialize()
-		{
+        protected ObjectDelivererProtocol? delivererProtocol;
 
+        public void Initialize(ObjectDelivererProtocol delivererProtocol)
+		{
+            this.delivererProtocol = delivererProtocol;
+
+            OnInitialize();
+        }
+
+        public virtual void OnInitialize()
+        {
+        }
+
+        public abstract ValueTask MakeSendPacket(Memory<byte> bodyBuffer);
+
+        public abstract ValueTask NotifyReceiveData(Memory<byte> dataBuffer);
+
+		protected async ValueTask DispatchMadeSendBuffer(Memory<byte> sendBuffer)
+		{
+            if (delivererProtocol == null) return;
+
+            await delivererProtocol.RequestSend(sendBuffer);
 		}
 
-        public abstract void MakeSendPacket(Span<byte> bodyBuffer);
-
-        public abstract void NotifyReceiveData(Span<byte> dataBuffer);
-
-		protected void DispatchMadeSendBuffer(Span<byte> sendBuffer)
+		protected async ValueTask DispatchMadeReceiveBuffer(Memory<byte> receiveBuffer)
 		{
-			MadeSendBuffer?.Invoke(sendBuffer);
+            delivererProtocol?.RequestReceiveData(receiveBuffer);
 		}
 
-		protected void DispatchMadeReceiveBuffer(Span<byte> receiveBuffer)
-		{
-			MadeReceiveBuffer?.Invoke(receiveBuffer);
-		}
-	}
+        public IDisposable Subscribe(IObserver<ReadOnlyMemory<byte>> observer)
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

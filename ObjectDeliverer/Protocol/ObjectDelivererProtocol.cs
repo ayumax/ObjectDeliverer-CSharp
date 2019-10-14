@@ -1,17 +1,18 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using ObjectDeliverer.PacketRule;
 
 namespace ObjectDeliverer.Protocol
 {
-    public abstract class ObjectDelivererProtocol : IDisposable
+    public abstract class ObjectDelivererProtocol : IDisposable, IProtocol
     {
         public delegate void ObjectDelivererProtocolConnected(ObjectDelivererProtocol delivererProtocol);
-        public event ObjectDelivererProtocolConnected Connected;
+        public event ObjectDelivererProtocolConnected? Connected;
         public delegate void ObjectDelivererProtocolDisconnected(ObjectDelivererProtocol delivererProtocol);
-        public event ObjectDelivererProtocolDisconnected Disconnected;
-        public delegate void ObjectDelivererProtocolReceiveData(ObjectDelivererProtocol delivererProtocol, Span<byte> receivedBuffer);
-        public event ObjectDelivererProtocolReceiveData ReceiveData;
+        public event ObjectDelivererProtocolDisconnected? Disconnected;
+        public delegate void ObjectDelivererProtocolReceiveData(ObjectDelivererProtocol delivererProtocol, Memory<byte> receivedBuffer);
+        public event ObjectDelivererProtocolReceiveData? ReceiveData;
 
         protected PacketRuleBase PacketRule = PacketRuleFactory.CreatePacketRuleNodivision();
 
@@ -19,18 +20,11 @@ namespace ObjectDeliverer.Protocol
         {
         }
 
-        public virtual void Start()
-        {
-        }
+        public abstract ValueTask Start();
 
-        public virtual void Close()
-        {
-        }
+        public abstract ValueTask Close();
 
-        public virtual void Send(Span<byte> dataBuffer)
-        {
-
-        }
+        public abstract ValueTask Send(Memory<byte> dataBuffer);
 
         protected virtual void DispatchConnected(ObjectDelivererProtocol delivererProtocol)
         {
@@ -42,7 +36,7 @@ namespace ObjectDeliverer.Protocol
             Disconnected?.Invoke(delivererProtocol);
         }
 
-        protected virtual void DispatchReceiveData(ObjectDelivererProtocol delivererProtocol, Span<byte> receivedBuffer)
+        protected virtual void DispatchReceiveData(ObjectDelivererProtocol delivererProtocol, Memory<byte> receivedBuffer)
         {
             ReceiveData?.Invoke(delivererProtocol, receivedBuffer);
         }
@@ -50,13 +44,14 @@ namespace ObjectDeliverer.Protocol
         public void SetPacketRule(PacketRuleBase PacketRule)
         {
             this.PacketRule = PacketRule;
-            PacketRule.Initialize();
-
-            PacketRule.MadeSendBuffer += x => RequestSend(x);
-            PacketRule.MadeReceiveBuffer += x => DispatchReceiveData(this, x);
+            PacketRule.Initialize(this);
         }
 
-        public abstract void RequestSend(Span<byte> dataBuffer);
+        public abstract ValueTask RequestSend(Memory<byte> dataBuffer);
+        public void RequestReceiveData(Memory<byte> dataBuffer)
+        {
+            DispatchReceiveData(this, dataBuffer);
+        }
 
 
         #region IDisposable Support

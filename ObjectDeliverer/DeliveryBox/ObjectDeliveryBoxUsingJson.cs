@@ -16,7 +16,7 @@ namespace ObjectDeliverer.DeliveryBox
 
 		}
 
-		public override void NotifyReceiveBuffer(ObjectDelivererProtocol fromObject, Span<byte> dataBuffer)
+		public override void NotifyReceiveBuffer(ObjectDelivererProtocol fromObject, Memory<byte> dataBuffer)
 		{
 			var createdObj = JsonSerializer.Deserialize<T>(dataBuffer.ToArray());
 

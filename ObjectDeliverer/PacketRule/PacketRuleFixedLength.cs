@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using ObjectDeliverer.Utils;
+using System.Threading.Tasks;
 
 namespace ObjectDeliverer.PacketRule
 {
@@ -10,23 +11,24 @@ namespace ObjectDeliverer.PacketRule
 
         private GrowBuffer BufferForSend = new GrowBuffer();
 
-        public override void Initialize()
+        public override void OnInitialize()
         {
+            base.OnInitialize();
             BufferForSend.Reset(0);
         }
 
-        public override void MakeSendPacket(Span<byte> bodyBuffer)
+        public override async ValueTask MakeSendPacket(Memory<byte> bodyBuffer)
         {
             BufferForSend.Clear();
             BufferForSend.CopyFrom(bodyBuffer.Slice(0, Math.Min(bodyBuffer.Length, FixedSize)));
 
-            DispatchMadeSendBuffer(BufferForSend.SpanBuffer);
+            await DispatchMadeSendBuffer(BufferForSend.SpanBuffer);
         }
 
 
-        public override void NotifyReceiveData(Span<byte> dataBuffer)
+        public override async ValueTask NotifyReceiveData(Memory<byte> dataBuffer)
         {
-            DispatchMadeReceiveBuffer(dataBuffer);
+            await DispatchMadeReceiveBuffer(dataBuffer);
         }
 
         public override int WantSize => FixedSize;

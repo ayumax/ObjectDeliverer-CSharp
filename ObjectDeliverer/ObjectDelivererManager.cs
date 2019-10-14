@@ -3,17 +3,19 @@ using System.Collections.Generic;
 using ObjectDeliverer.Protocol;
 using ObjectDeliverer.DeliveryBox;
 using ObjectDeliverer.PacketRule;
+using System.Reactive.Subjects;
 
 namespace ObjectDeliverer
 {
 	public class ObjectDelivererManager : IDisposable
 	{
-		public delegate void ObjectDelivererManagerConnected(ObjectDelivererProtocol delivererProtocol);
-        public event ObjectDelivererManagerConnected Connected;
+
+        private ConnectedSubject connectedSubject;
+        public IObservable<IProtocol> Connected => connectedSubject;
         public delegate void ObjectDelivererManagerDisconnected(ObjectDelivererProtocol delivererProtocol);
-        public event ObjectDelivererManagerDisconnected Disconnected;
-        public delegate void ObjectDelivererManagerReceiveData(ObjectDelivererProtocol delivererProtocol, Span<byte> dataBuffer);
-        public event ObjectDelivererManagerReceiveData Received;
+        public event ObjectDelivererManagerDisconnected? Disconnected;
+        public delegate void ObjectDelivererManagerReceiveData(ObjectDelivererProtocol delivererProtocol, Memory<byte> dataBuffer);
+        public event ObjectDelivererManagerReceiveData? Received;
 
         private ObjectDelivererProtocol? CurrentProtocol;
 		private DeliveryBoxBase? DeliveryBox;
@@ -22,7 +24,9 @@ namespace ObjectDeliverer
 
 		public ObjectDelivererManager()
 		{
-		}
+            connectedSubject = new ConnectedSubject();
+
+        }
 
 		public void Start(ObjectDelivererProtocol Protocol, PacketRuleBase PacketRule, DeliveryBoxBase? DeliveryBox = null)
 		{
@@ -46,7 +50,7 @@ namespace ObjectDeliverer
             CurrentProtocol.Start();
         }
 
-        private void DeliveryBox_RequestSend(ObjectDelivererProtocol? destination, Span<byte> sendBuffer)
+        private void DeliveryBox_RequestSend(ObjectDelivererProtocol? destination, Memory<byte> sendBuffer)
         {
             if (destination != null)
             {
@@ -58,9 +62,10 @@ namespace ObjectDeliverer
             }
         }
 
-        private void CurrentProtocol_ReceiveData(ObjectDelivererProtocol delivererProtocol, Span<byte> receivedBuffer)
+        private void CurrentProtocol_ReceiveData(ObjectDelivererProtocol delivererProtocol, Memory<byte> receivedBuffer)
         {
-            Received?.Invoke(delivererProtocol, receivedBuffer);
+            //Received?.Invoke(delivererProtocol, receivedBuffer);
+            subject.OnNext(receivedBuffer);
             DeliveryBox?.NotifyReceiveBuffer(delivererProtocol, receivedBuffer);
         }
 
@@ -73,7 +78,7 @@ namespace ObjectDeliverer
         private void CurrentProtocol_Connected(ObjectDelivererProtocol delivererProtocol)
         {
             ConnectedList.Add(delivererProtocol);
-            Connected?.Invoke(delivererProtocol);
+            connectedSubject.Publish(delivererProtocol);
         }
 
         public void Close()
@@ -94,7 +99,7 @@ namespace ObjectDeliverer
 			CurrentProtocol = null;
 		}
 
-		public void Send(Span<byte> DataBuffer)
+		public void Send(Memory<byte> DataBuffer)
 		{
 			if (CurrentProtocol == null) return;
 			if (disposedValue) return;
@@ -102,7 +107,7 @@ namespace ObjectDeliverer
 			CurrentProtocol.Send(DataBuffer);
 		}
 
-		public void SendTo(Span<byte> DataBuffer, ObjectDelivererProtocol Target)
+		public void SendTo(Memory<byte> DataBuffer, ObjectDelivererProtocol Target)
 		{
 			if (CurrentProtocol == null) return;
 			if (disposedValue) return;
@@ -136,6 +141,13 @@ namespace ObjectDeliverer
 		{
 			Dispose(true);
 		}
-		#endregion
-	}
+
+
+        #endregion
+
+        public IDisposable Subscribe(IObserver<DeliverData> observer)
+        {
+            return subject.Subscribe(observer);
+        }
+    }
 }

@@ -22,15 +22,14 @@ namespace ObjectDeliverer.Protocol
             this.AutoConnectAfterDisconnect = autoConnectAfterDisconnect;
         }
 
-        public override void Start()
+        public override async Task Start()
         {
             CloseSocket();
 
-            tcpClient = new TcpClient(IpAddress, Port);
+            tcpClient = new TcpClient();
 
-            if (tcpClient == null) return;
+            await tcpClient.ConnectAsync(IpAddress, Port);
 
-            tcpClient.ConnectAsync
             ConnectInnerThread = new FWorkerThread([this] { return TryConnect(); }, 1.0f);
             ConnectThread = FRunnableThread::Create(ConnectInnerThread, TEXT("ObjectDeliverer UProtocolTcpIpClient ConnectThread"));
         }

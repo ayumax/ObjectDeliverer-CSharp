@@ -9,7 +9,7 @@ namespace ObjectDeliverer.Protocol
 {
     public class ProtocolTcpIpSocket : ObjectDelivererProtocol
     {
-        protected TcpClient? tcpClient;
+        protected TcpClient tcpClient = new TcpClient();
         protected bool IsSelfClose = false;
 
         protected object lockObj = new object();
@@ -19,13 +19,12 @@ namespace ObjectDeliverer.Protocol
         private Task? ReceiveTask;
         private CancellationTokenSource? Canceler;
 
-        public override void Close()
+        public override async ValueTask Close()
         {
-            CloseSocket();
+            await CloseSocket();
         }
 
-
-        protected void CloseSocket()
+        protected async ValueTask CloseSocket()
         {
             if (tcpClient == null) return;
 
@@ -38,18 +37,18 @@ namespace ObjectDeliverer.Protocol
                 Canceler?.Cancel();
             }
 
-            ReceiveTask?.Wait();
+            await ReceiveTask;
 
             tcpClient = null;
             ReceiveTask = null;
             Canceler = null;
         }
 
-        public override void Send(Span<byte> dataBuffer)
+        public override async ValueTask Send(Memory<byte> dataBuffer)
         {
             if (tcpClient == null) return;
 
-            PacketRule.MakeSendPacket(dataBuffer);
+            await PacketRule.MakeSendPacket(dataBuffer);
         }
 
         protected void OnConnected(TcpClient connectionSocket)
@@ -84,7 +83,7 @@ namespace ObjectDeliverer.Protocol
             }, Canceler.Token);
         }
 
-        private bool ReceivedData()
+        private async ValueTask<bool> ReceivedData()
         {
             if (tcpClient == null)
             {
@@ -118,21 +117,21 @@ namespace ObjectDeliverer.Protocol
                     return false;
                 }
 
-                if (tcpClient.GetStream().Read(ReceiveBuffer.SpanBuffer) <= 0)
+                if (await tcpClient.GetStream().ReadAsync(ReceiveBuffer.MemoryBuffer) <= 0)
                 {
                     NotifyDisconnect();
                     return false;
                 }
 
-                PacketRule.NotifyReceiveData(ReceiveBuffer.SpanBuffer);
+                await PacketRule.NotifyReceiveData(ReceiveBuffer.MemoryBuffer);
             }
 
             return true;
         }
 
-        public override void RequestSend(Span<byte> dataBuffer)
+        public override async ValueTask RequestSend(Memory<byte> dataBuffer)
         {
-            tcpClient?.GetStream()?.Write(dataBuffer);
+            await tcpClient.GetStream().WriteAsync(dataBuffer);
         }
 
         private void NotifyDisconnect()

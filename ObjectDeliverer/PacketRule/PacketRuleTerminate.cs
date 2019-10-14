@@ -19,7 +19,7 @@ namespace ObjectDeliverer.PacketRule
             BufferForReceive.Reset(0);
         }
 
-        public override void MakeSendPacket(Span<byte> bodyBuffer)
+        public override void MakeSendPacket(Memory<byte> bodyBuffer)
         {
             var SendSize = bodyBuffer.Length + Terminate.Length;
             BufferForSend.Reset(SendSize);
@@ -30,7 +30,7 @@ namespace ObjectDeliverer.PacketRule
             DispatchMadeSendBuffer(BufferForSend.SpanBuffer);
         }
 
-        public override void NotifyReceiveData(Span<byte> dataBuffer)
+        public override void NotifyReceiveData(Memory<byte> dataBuffer)
         {
             ReceiveTempBuffer.Add(dataBuffer);
 
