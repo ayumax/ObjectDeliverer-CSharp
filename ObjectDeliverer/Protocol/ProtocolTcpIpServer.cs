@@ -50,26 +50,41 @@ namespace ObjectDeliverer.Protocol
 
         private void ClientSocket_ReceiveData(ObjectDelivererProtocol delivererProtocol, Memory<byte> receivedBuffer)
         {
-            throw new NotImplementedException();
+            DispatchReceiveData(delivererProtocol, receivedBuffer);
         }
 
         private void ClientSocket_Disconnected(ObjectDelivererProtocol delivererProtocol)
         {
-            throw new NotImplementedException();
+            var _clientSocket = delivererProtocol as ProtocolTcpIpSocket;
+            if (_clientSocket is ProtocolTcpIpSocket protocolTcpIp)
+            {
+                int foundIndex = ConnectedSockets.IndexOf(protocolTcpIp);
+                if (foundIndex >= 0)
+                {
+                    protocolTcpIp.Disconnected -= ClientSocket_Disconnected;
+                    protocolTcpIp.ReceiveData -= ClientSocket_ReceiveData;
+
+                    ConnectedSockets.RemoveAt(foundIndex);
+
+                    DispatchDisconnected(protocolTcpIp);
+                }
+            }
         }
-
-
 
         public override async ValueTask Close()
         {
+            List<Task> closeTasks = new List<Task>();
+
             foreach (var clientSocket in ConnectedSockets)
             {
                 clientSocket.Disconnected -= ClientSocket_Disconnected;
                 clientSocket.ReceiveData -= ClientSocket_ReceiveData;
-                await clientSocket.Close();
+                closeTasks.Add(clientSocket.Close().AsTask());
             }
 
             ConnectedSockets.Clear();
+
+            await Task.WhenAll(closeTasks);
         }
 
         public override async ValueTask Send(Memory<byte> dataBuffer)
@@ -87,26 +102,3 @@ namespace ObjectDeliverer.Protocol
 }
 
 
-
-//void DisconnectedClient(const UObjectDelivererProtocol* ClientSocket)
-//{
-//	auto _clientSocket = (UProtocolTcpIpSocket*)(ClientSocket);
-//	if (!IsValid(_clientSocket)) return;
-
-//	auto foundIndex = ConnectedSockets.Find(_clientSocket);
-//	if (foundIndex != INDEX_NONE)
-//	{
-//		_clientSocket->Disconnected.Unbind();
-//		_clientSocket->ReceiveData.Unbind();
-
-//		ConnectedSockets.RemoveAt(foundIndex);
-
-//		DispatchDisconnected(ClientSocket);
-//	}
-//}
-
-//void ReceiveDataFromClient(const UObjectDelivererProtocol* ClientSocket, const TArray<uint8>& Buffer)
-//{
-//    DispatchReceiveData(ClientSocket, Buffer);
-//}
-//}
