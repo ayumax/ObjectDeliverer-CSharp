@@ -36,16 +36,18 @@ namespace ObjectDeliverer.PacketRule
 
         public abstract ValueTask NotifyReceiveData(Memory<byte> dataBuffer);
 
-		protected async ValueTask DispatchMadeSendBuffer(Memory<byte> sendBuffer)
+		protected async ValueTask DispatchMadeSendBuffer(Memory<byte> memoryBuffer)
 		{
             if (delivererProtocol == null) return;
 
-            await delivererProtocol.RequestSend(sendBuffer);
+            await delivererProtocol.RequestSend(memoryBuffer);
 		}
 
-		protected async ValueTask DispatchMadeReceiveBuffer(Memory<byte> receiveBuffer)
+		protected ValueTask DispatchMadeReceiveBuffer(Memory<byte> receiveBuffer)
 		{
             delivererProtocol?.RequestReceiveData(receiveBuffer);
+
+            return new ValueTask();
 		}
 
         public IDisposable Subscribe(IObserver<ReadOnlyMemory<byte>> observer)

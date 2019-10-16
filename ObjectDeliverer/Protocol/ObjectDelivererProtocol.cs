@@ -21,7 +21,6 @@ namespace ObjectDeliverer.Protocol
         }
 
         public abstract ValueTask Start();
-
         public abstract ValueTask Close();
 
         public abstract ValueTask Send(Memory<byte> dataBuffer);

@@ -1,14 +1,15 @@
 using ObjectDeliverer.Protocol;
 using System;
 using System.Collections.Generic;
-using Utf8Json;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace ObjectDeliverer.DeliveryBox
 {
 	public class ObjectDeliveryBoxUsingJson<T> : DeliveryBoxBase
 	{
 		public delegate void CNObjectDeliveryBoxReceived(T receivedObject, ObjectDelivererProtocol fromObject);
-		public event CNObjectDeliveryBoxReceived Received;
+		public event CNObjectDeliveryBoxReceived? Received;
 
 
 		public ObjectDeliveryBoxUsingJson()
@@ -18,7 +19,7 @@ namespace ObjectDeliverer.DeliveryBox
 
 		public override void NotifyReceiveBuffer(ObjectDelivererProtocol fromObject, Memory<byte> dataBuffer)
 		{
-			var createdObj = JsonSerializer.Deserialize<T>(dataBuffer.ToArray());
+			var createdObj = JsonSerializer.Deserialize<T>(dataBuffer.Span);
 
 			if (createdObj != null)
 			{
@@ -26,16 +27,20 @@ namespace ObjectDeliverer.DeliveryBox
 			}	
 		}
 
-		public void Send(T messageObject)
+		public async ValueTask Send(T messageObject)
 		{
-			SendTo(messageObject, null);
+            await SendTo(messageObject, null);
 		}
 
-		public void SendTo(T messageObject, ObjectDelivererProtocol? destination)
+		public async ValueTask SendTo(T messageObject, ObjectDelivererProtocol? destination)
 		{
-			var buffer = JsonSerializer.Serialize(messageObject);
+            if (objectDeliverer == null)
+            {
+                return;
+            }
 
-			DispatchRequestSend(destination, buffer);
+            var buffer = JsonSerializer.SerializeToUtf8Bytes<T>(messageObject);
+            await objectDeliverer.SendTo(buffer, destination!);
 		}
 	}
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using ObjectDeliverer.Utils;
 
 
@@ -12,27 +13,29 @@ namespace ObjectDeliverer.PacketRule
         private GrowBuffer ReceiveTempBuffer = new GrowBuffer();
         private GrowBuffer BufferForReceive = new GrowBuffer();
 
-        public override void Initialize()
+        public override void OnInitialize()
         {
+            base.OnInitialize();
+
             BufferForSend.Reset(0);
             ReceiveTempBuffer.Reset(0);
             BufferForReceive.Reset(0);
         }
 
-        public override void MakeSendPacket(Memory<byte> bodyBuffer)
+        public override async ValueTask MakeSendPacket(Memory<byte> bodyBuffer)
         {
             var SendSize = bodyBuffer.Length + Terminate.Length;
             BufferForSend.Reset(SendSize);
 
-            BufferForSend.CopyFrom(bodyBuffer, 0);
+            BufferForSend.CopyFrom(bodyBuffer.Span, 0);
             BufferForSend.CopyFrom(Terminate, bodyBuffer.Length);
 
-            DispatchMadeSendBuffer(BufferForSend.SpanBuffer);
+            await DispatchMadeSendBuffer(BufferForSend.MemoryBuffer);
         }
 
-        public override void NotifyReceiveData(Memory<byte> dataBuffer)
+        public override async ValueTask NotifyReceiveData(Memory<byte> dataBuffer)
         {
-            ReceiveTempBuffer.Add(dataBuffer);
+            ReceiveTempBuffer.Add(dataBuffer.Span);
 
             int findIndex = -1;
 
@@ -64,7 +67,7 @@ namespace ObjectDeliverer.PacketRule
 
                 BufferForReceive.Reset(findIndex);
                 BufferForReceive.CopyFrom(ReceiveTempBuffer.AsSpan(0, findIndex));
-                DispatchMadeReceiveBuffer(BufferForReceive.SpanBuffer);
+                await DispatchMadeReceiveBuffer(BufferForReceive.MemoryBuffer);
 
                 ReceiveTempBuffer.RemoveAt(0, findIndex + Terminate.Length);
 

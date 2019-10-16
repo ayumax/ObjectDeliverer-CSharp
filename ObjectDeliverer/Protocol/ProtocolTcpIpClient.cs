@@ -11,69 +11,33 @@ namespace ObjectDeliverer.Protocol
     {
         public string IpAddress { get; set; } = "127.0.0.1";
         public int Port { get; set; } = 0;
-        public bool Retry { get; set; } = false;
         public bool AutoConnectAfterDisconnect { get; set; } = false;
 
-        void Initialize(string ipAddress, int port, bool retry = false, bool autoConnectAfterDisconnect = false)
+        void Initialize(string ipAddress, int port, bool autoConnectAfterDisconnect = false)
         {
             this.IpAddress = ipAddress;
             this.Port = port;
-            this.Retry = retry;
             this.AutoConnectAfterDisconnect = autoConnectAfterDisconnect;
         }
 
-        public override async Task Start()
+        public override async ValueTask Start()
         {
-            CloseSocket();
+            await CloseSocket();
 
-            tcpClient = new TcpClient();
-
-            await tcpClient.ConnectAsync(IpAddress, Port);
-
-            ConnectInnerThread = new FWorkerThread([this] { return TryConnect(); }, 1.0f);
-            ConnectThread = FRunnableThread::Create(ConnectInnerThread, TEXT("ObjectDeliverer UProtocolTcpIpClient ConnectThread"));
-        }
-
-        bool TryConnect()
-        {
-            if (InnerSocket->Connect(ConnectEndPoint.ToInternetAddr().Get()))
+            do
             {
+                tcpClient = new TcpClient();
+
+                await tcpClient.ConnectAsync(IpAddress, Port);
+
                 DispatchConnected(this);
 
-                OnConnected(InnerSocket);
+                await StartPollilng(tcpClient);
             }
-            else if (RetryConnect)
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        public override void Close()
-        {
-            base.Close();
-
-            if (!ConnectThread) return;
-            ConnectThread->Kill(true);
-
-            delete ConnectThread;
-            ConnectThread = nullptr;
-
-            if (!ConnectInnerThread) return;
-            delete ConnectInnerThread;
-            ConnectInnerThread = nullptr;
+            while (AutoConnectAfterDisconnect == true && IsSelfClose == false) ;
+ 
         }
 
 
-        protected override void DispatchDisconnected(ObjectDelivererProtocol delivererProtocol)
-        {
-            base.DispatchDisconnected(delivererProtocol);
-
-            if (AutoConnectAfterDisconnect)
-            {
-                Start();
-            }
-        }
     }
 }

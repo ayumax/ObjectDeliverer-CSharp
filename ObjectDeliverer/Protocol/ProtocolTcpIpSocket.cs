@@ -9,7 +9,7 @@ namespace ObjectDeliverer.Protocol
 {
     public class ProtocolTcpIpSocket : ObjectDelivererProtocol
     {
-        protected TcpClient tcpClient = new TcpClient();
+        protected TcpClient? tcpClient = null;
         protected bool IsSelfClose = false;
 
         protected object lockObj = new object();
@@ -19,29 +19,31 @@ namespace ObjectDeliverer.Protocol
         private Task? ReceiveTask;
         private CancellationTokenSource? Canceler;
 
+        public override ValueTask Start()
+        {
+            return new ValueTask();
+        }
+
         public override async ValueTask Close()
         {
             await CloseSocket();
         }
 
-        protected async ValueTask CloseSocket()
+        protected ValueTask CloseSocket()
         {
-            if (tcpClient == null) return;
+            if (tcpClient == null) return new ValueTask();
 
             IsSelfClose = true;
 
             tcpClient.Close();
 
-            lock (lockObj)
-            {
-                Canceler?.Cancel();
-            }
-
-            await ReceiveTask;
+            Canceler?.Cancel();
 
             tcpClient = null;
             ReceiveTask = null;
             Canceler = null;
+
+            return new ValueTask();
         }
 
         public override async ValueTask Send(Memory<byte> dataBuffer)
@@ -51,86 +53,77 @@ namespace ObjectDeliverer.Protocol
             await PacketRule.MakeSendPacket(dataBuffer);
         }
 
-        protected void OnConnected(TcpClient connectionSocket)
+
+        public async ValueTask StartPollilng(TcpClient connectionSocket)
         {
             tcpClient = connectionSocket;
-            StartPollilng();
-        }
 
-        private void StartPollilng()
-        {
             Canceler = new CancellationTokenSource();
             
             ReceiveBuffer.Reset(1024);
 
-            ReceiveTask = Task.Run(() =>
+            await foreach(var buffer in ReceivedData())
             {
-                while (true)
-                {
-                    lock(lockObj)
-                    {
-                        if (Canceler.IsCancellationRequested == false)
-                        {
-                            if (ReceivedData() == false)
-                            {
-                                break;
-                            }
-                        }  
-                    }
-                  
-                    Thread.Sleep(1);
-                }
-            }, Canceler.Token);
+                await PacketRule.NotifyReceiveData(ReceiveBuffer.MemoryBuffer);
+            }
+            
         }
 
-        private async ValueTask<bool> ReceivedData()
+        private async IAsyncEnumerable<Memory<byte>> ReceivedData()
         {
             if (tcpClient == null)
             {
                 DispatchDisconnected(this);
-                return false;
+                yield break;
             }
 
-      
-            while (tcpClient?.Available > 0)
+            while(Canceler!.IsCancellationRequested == false)
             {
-                int wantSize = PacketRule.WantSize;
-
-                if (wantSize > 0)
+                if (tcpClient.Available > 0)
                 {
-                    if (tcpClient.Available < wantSize) return true;
+                    int wantSize = PacketRule.WantSize;
+
+                    if (wantSize > 0)
+                    {
+                        if (tcpClient.Available < wantSize) continue;
+                    }
+
+                    var receiveSize = wantSize == 0 ? tcpClient.Available : wantSize;
+
+                    ReceiveBuffer.Reset(receiveSize);
+
+                    if (tcpClient == null)
+                    {
+                        NotifyDisconnect();
+                        yield break;
+                    }
+
+                    if (tcpClient.GetStream() == null)
+                    {
+                        NotifyDisconnect();
+                        yield break;
+                    }
+
+                    if (await tcpClient.GetStream().ReadAsync(ReceiveBuffer.MemoryBuffer) <= 0)
+                    {
+                        NotifyDisconnect();
+                        yield break;
+                    }
+
+                    yield return ReceiveBuffer.MemoryBuffer;
                 }
-
-                var receiveSize = wantSize == 0 ? tcpClient.Available : wantSize;
-
-                ReceiveBuffer.Reset(receiveSize);
-
-                if (tcpClient == null)
+                else
                 {
-                    NotifyDisconnect();
-                    return false;
+                    await Task.Delay(1);
                 }
-
-                if (tcpClient.GetStream() == null)
-                {
-                    NotifyDisconnect();
-                    return false;
-                }
-
-                if (await tcpClient.GetStream().ReadAsync(ReceiveBuffer.MemoryBuffer) <= 0)
-                {
-                    NotifyDisconnect();
-                    return false;
-                }
-
-                await PacketRule.NotifyReceiveData(ReceiveBuffer.MemoryBuffer);
             }
 
-            return true;
         }
 
         public override async ValueTask RequestSend(Memory<byte> dataBuffer)
         {
+            if (tcpClient == null) return;
+
             await tcpClient.GetStream().WriteAsync(dataBuffer);
         }
 

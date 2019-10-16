@@ -52,12 +52,12 @@ namespace ObjectDeliverer.PacketRule
                 BufferForSend[i] = (byte)((BodyBufferNum >> offset) & 0xFF);
             }
 
-            BufferForSend.CopyFrom(bodyBuffer, SizeLength);
+            BufferForSend.CopyFrom(bodyBuffer.Span, SizeLength);
 
-            await DispatchMadeSendBuffer(BufferForSend.SpanBuffer);
+            await DispatchMadeSendBuffer(BufferForSend.MemoryBuffer);
         }
 
-        public override void NotifyReceiveData(Memory<byte> dataBuffer)
+        public override async ValueTask NotifyReceiveData(Memory<byte> dataBuffer)
         {
             if (ReceiveMode == EReceiveMode.Size)
             {
@@ -65,7 +65,7 @@ namespace ObjectDeliverer.PacketRule
                 return;
             }
 
-            OnReceivedBody(dataBuffer);
+            await OnReceivedBody(dataBuffer);
         }
 
 
@@ -83,15 +83,15 @@ namespace ObjectDeliverer.PacketRule
                 {
                     offset = 8 * i;
                 }
-                BodySize |= (uint)(dataBuffer[i] << offset);
+                BodySize |= (uint)(dataBuffer.Span[i] << offset);
             }
 
             ReceiveMode = EReceiveMode.Body;
         }
 
-        public void OnReceivedBody(Memory<byte> dataBuffer)
+        public async ValueTask OnReceivedBody(Memory<byte> dataBuffer)
         {
-            DispatchMadeReceiveBuffer(dataBuffer);
+            await DispatchMadeReceiveBuffer(dataBuffer);
 
             BodySize = 0;
 

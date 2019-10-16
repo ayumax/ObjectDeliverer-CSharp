@@ -20,9 +20,9 @@ namespace ObjectDeliverer.PacketRule
         public override async ValueTask MakeSendPacket(Memory<byte> bodyBuffer)
         {
             BufferForSend.Clear();
-            BufferForSend.CopyFrom(bodyBuffer.Slice(0, Math.Min(bodyBuffer.Length, FixedSize)));
+            BufferForSend.CopyFrom(bodyBuffer.Span.Slice(0, Math.Min(bodyBuffer.Length, FixedSize)));
 
-            await DispatchMadeSendBuffer(BufferForSend.SpanBuffer);
+            await DispatchMadeSendBuffer(BufferForSend.MemoryBuffer);
         }
 
 
