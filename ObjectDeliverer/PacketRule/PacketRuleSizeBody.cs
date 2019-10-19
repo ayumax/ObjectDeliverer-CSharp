@@ -57,7 +57,7 @@ namespace ObjectDeliverer.PacketRule
             await DispatchMadeSendBuffer(BufferForSend.MemoryBuffer);
         }
 
-        public override async ValueTask NotifyReceiveData(Memory<byte> dataBuffer)
+        public override void NotifyReceiveData(Memory<byte> dataBuffer)
         {
             if (ReceiveMode == EReceiveMode.Size)
             {
@@ -65,7 +65,7 @@ namespace ObjectDeliverer.PacketRule
                 return;
             }
 
-            await OnReceivedBody(dataBuffer);
+            OnReceivedBody(dataBuffer);
         }
 
 
@@ -89,9 +89,9 @@ namespace ObjectDeliverer.PacketRule
             ReceiveMode = EReceiveMode.Body;
         }
 
-        public async ValueTask OnReceivedBody(Memory<byte> dataBuffer)
+        public void OnReceivedBody(Memory<byte> dataBuffer)
         {
-            await DispatchMadeReceiveBuffer(dataBuffer);
+            DispatchMadeReceiveBuffer(dataBuffer);
 
             BodySize = 0;
 

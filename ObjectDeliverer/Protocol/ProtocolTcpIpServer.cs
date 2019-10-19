@@ -5,36 +5,43 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using ObjectDeliverer.Protocol.IP;
 using ObjectDeliverer.Utils;
 
 namespace ObjectDeliverer.Protocol
 {
-    public class ProtocolTcpIpServer : ProtocolTcpIpSocket
+    public class ProtocolTcpIpServer : ObjectDelivererProtocol
     {
-        public int ListenPort { get; private set; }
+        public int ListenPort { get; set; }
+        public bool IsMultiClient { get; set; }
 
         private TcpListener? tcpListener = null;
 
-        private List<ProtocolTcpIpSocket> ConnectedSockets = new List<ProtocolTcpIpSocket>();
+        private List<ProtocolIPSocket> ConnectedSockets = new List<ProtocolIPSocket>();
 
-        public void Initialize(int Port)
+        private CancellationTokenSource? Canceler;
+
+        public void Initialize(int Port, bool IsMultiClient)
         {
-            ListenPort = Port;
+            this.ListenPort = Port;
+            this.IsMultiClient = IsMultiClient;
         }
 
-        public override async ValueTask Start()
+        public override async ValueTask StartAsync()
         {
-            await Close();
+            await CloseAsync();
+
+            Canceler = new CancellationTokenSource();
 
             tcpListener = new TcpListener(IPAddress.Any, ListenPort);
 
-            List<ValueTask> pollingTasks = new List<ValueTask>();
+            List<Task> pollingTasks = new List<Task>();
 
-            while (true)
+            while (Canceler.IsCancellationRequested == false)
             {
-                var client = await tcpListener.AcceptTcpClientAsync();
+                var client = new TCPClient(await tcpListener.AcceptTcpClientAsync());
 
-                var clientSocket = new ProtocolTcpIpSocket();
+                var clientSocket = new ProtocolIPSocket();
                 clientSocket.Disconnected += ClientSocket_Disconnected;
                 clientSocket.ReceiveData += ClientSocket_ReceiveData;
                 clientSocket.SetPacketRule(PacketRule.Clone());
@@ -43,8 +50,10 @@ namespace ObjectDeliverer.Protocol
 
                 DispatchConnected(clientSocket);
 
-                pollingTasks.Add(clientSocket.StartPollilng(client));
+                pollingTasks.Add(clientSocket.StartReceiveAsync(client));
             }
+
+            await Task.WhenAll(pollingTasks);
 
         }
 
@@ -55,8 +64,9 @@ namespace ObjectDeliverer.Protocol
 
         private void ClientSocket_Disconnected(ObjectDelivererProtocol delivererProtocol)
         {
-            var _clientSocket = delivererProtocol as ProtocolTcpIpSocket;
-            if (_clientSocket is ProtocolTcpIpSocket protocolTcpIp)
+            if (delivererProtocol == null) return;
+
+            if (delivererProtocol is ProtocolIPSocket protocolTcpIp)
             {
                 int foundIndex = ConnectedSockets.IndexOf(protocolTcpIp);
                 if (foundIndex >= 0)
@@ -71,15 +81,18 @@ namespace ObjectDeliverer.Protocol
             }
         }
 
-        public override async ValueTask Close()
+        public override async ValueTask CloseAsync()
         {
+            Canceler?.Cancel();
+            tcpListener?.Stop();
+
             List<Task> closeTasks = new List<Task>();
 
             foreach (var clientSocket in ConnectedSockets)
             {
                 clientSocket.Disconnected -= ClientSocket_Disconnected;
                 clientSocket.ReceiveData -= ClientSocket_ReceiveData;
-                closeTasks.Add(clientSocket.Close().AsTask());
+                closeTasks.Add(clientSocket.CloseAsync().AsTask());
             }
 
             ConnectedSockets.Clear();
@@ -87,13 +100,13 @@ namespace ObjectDeliverer.Protocol
             await Task.WhenAll(closeTasks);
         }
 
-        public override async ValueTask Send(Memory<byte> dataBuffer)
+        public override async ValueTask SendAsync(Memory<byte> dataBuffer)
         {
             List<Task> sendTasks = new List<Task>();
 
             foreach(var clientSocket in ConnectedSockets)
             {
-                sendTasks.Add(clientSocket.Send(dataBuffer).AsTask());
+                sendTasks.Add(clientSocket.SendAsync(dataBuffer).AsTask());
             }
 
             await Task.WhenAll(sendTasks);

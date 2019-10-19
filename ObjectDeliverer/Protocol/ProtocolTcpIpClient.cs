@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
-using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using ObjectDeliverer.Protocol.IP;
 using ObjectDeliverer.Utils;
 
 namespace ObjectDeliverer.Protocol
 {
-    public class ProtocolTcpIpClient : ProtocolTcpIpSocket
+    public class ProtocolTcpIpClient : ProtocolIPSocket
     {
         public string IpAddress { get; set; } = "127.0.0.1";
         public int Port { get; set; } = 0;
@@ -20,24 +20,22 @@ namespace ObjectDeliverer.Protocol
             this.AutoConnectAfterDisconnect = autoConnectAfterDisconnect;
         }
 
-        public override async ValueTask Start()
+        public override async ValueTask StartAsync()
         {
-            await CloseSocket();
+            await base.StartAsync();
 
             do
             {
-                tcpClient = new TcpClient();
+                ipClient = new TCPClient();
 
-                await tcpClient.ConnectAsync(IpAddress, Port);
+                await ipClient.ConnectAsync(IpAddress, Port);
 
                 DispatchConnected(this);
 
-                await StartPollilng(tcpClient);
+                _ = StartReceiveAsync(ipClient);
             }
-            while (AutoConnectAfterDisconnect == true && IsSelfClose == false) ;
- 
+            while (AutoConnectAfterDisconnect == true && IsSelfClose == false);
+
         }
-
-
     }
 }

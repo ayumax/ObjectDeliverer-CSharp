@@ -4,6 +4,7 @@ using ObjectDeliverer.Protocol;
 using ObjectDeliverer.DeliveryBox;
 using ObjectDeliverer.PacketRule;
 using System.Threading.Tasks;
+using System.Reactive;
 
 namespace ObjectDeliverer
 {
@@ -19,7 +20,7 @@ namespace ObjectDeliverer
         private ObjectDelivererProtocol? CurrentProtocol;
 		private DeliveryBoxBase? DeliveryBox;
 
-		static ObjectDelivererManager CreateObjectDelivererManager(bool IsEventWithGameThread = true) => new ObjectDelivererManager();
+		public static ObjectDelivererManager CreateObjectDelivererManager(bool IsEventWithGameThread = true) => new ObjectDelivererManager();
 
 		public ObjectDelivererManager()
 		{
@@ -44,7 +45,7 @@ namespace ObjectDeliverer
 
             ConnectedList.Clear();
 
-            await CurrentProtocol.Start();
+            await CurrentProtocol.StartAsync();
         }
 
 
@@ -74,7 +75,7 @@ namespace ObjectDeliverer
             CurrentProtocol.Disconnected -= CurrentProtocol_Disconnected;
             CurrentProtocol.ReceiveData -= CurrentProtocol_ReceiveData;
 
-			CurrentProtocol.Close();
+			CurrentProtocol.CloseAsync();
 
 			CurrentProtocol = null;
 		}
@@ -84,7 +85,7 @@ namespace ObjectDeliverer
 			if (CurrentProtocol == null) return;
 			if (disposedValue) return;
 
-			await CurrentProtocol.Send(DataBuffer);
+			await CurrentProtocol.SendAsync(DataBuffer);
 		}
 
 		public async ValueTask SendTo(Memory<byte> DataBuffer, ObjectDelivererProtocol Target)
@@ -92,7 +93,7 @@ namespace ObjectDeliverer
 			if (CurrentProtocol == null) return;
 			if (disposedValue) return;
 
-			await Target.Send(DataBuffer);
+			await Target.SendAsync(DataBuffer);
 		}
 
 

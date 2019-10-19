@@ -33,7 +33,7 @@ namespace ObjectDeliverer.PacketRule
             await DispatchMadeSendBuffer(BufferForSend.MemoryBuffer);
         }
 
-        public override async ValueTask NotifyReceiveData(Memory<byte> dataBuffer)
+        public override void NotifyReceiveData(Memory<byte> dataBuffer)
         {
             ReceiveTempBuffer.Add(dataBuffer.Span);
 
@@ -67,7 +67,8 @@ namespace ObjectDeliverer.PacketRule
 
                 BufferForReceive.Reset(findIndex);
                 BufferForReceive.CopyFrom(ReceiveTempBuffer.AsSpan(0, findIndex));
-                await DispatchMadeReceiveBuffer(BufferForReceive.MemoryBuffer);
+
+                DispatchMadeReceiveBuffer(BufferForReceive.MemoryBuffer);
 
                 ReceiveTempBuffer.RemoveAt(0, findIndex + Terminate.Length);
 

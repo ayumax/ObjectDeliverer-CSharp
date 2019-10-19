@@ -20,10 +20,10 @@ namespace ObjectDeliverer.Protocol
         {
         }
 
-        public abstract ValueTask Start();
-        public abstract ValueTask Close();
+        public abstract ValueTask StartAsync();
+        public abstract ValueTask CloseAsync();
 
-        public abstract ValueTask Send(Memory<byte> dataBuffer);
+        public abstract ValueTask SendAsync(Memory<byte> dataBuffer);
 
         protected virtual void DispatchConnected(ObjectDelivererProtocol delivererProtocol)
         {
@@ -46,7 +46,8 @@ namespace ObjectDeliverer.Protocol
             PacketRule.Initialize(this);
         }
 
-        public abstract ValueTask RequestSend(Memory<byte> dataBuffer);
+        public virtual ValueTask RequestSendAsync(Memory<byte> dataBuffer) => new ValueTask();
+
         public void RequestReceiveData(Memory<byte> dataBuffer)
         {
             DispatchReceiveData(this, dataBuffer);
@@ -54,7 +55,7 @@ namespace ObjectDeliverer.Protocol
 
 
         #region IDisposable Support
-        private bool disposedValue = false; // èdï°Ç∑ÇÈåƒÇ—èoÇµÇåüèoÇ∑ÇÈÇ…ÇÕ
+        private bool disposedValue = false; 
 
         protected virtual void Dispose(bool disposing)
         {
@@ -62,7 +63,7 @@ namespace ObjectDeliverer.Protocol
             {
                 if (disposing)
                 {
-                    Close();
+                    CloseAsync();
                 }
 
                 disposedValue = true;

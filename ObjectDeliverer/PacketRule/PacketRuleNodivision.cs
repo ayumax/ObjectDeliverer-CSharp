@@ -11,9 +11,9 @@ namespace ObjectDeliverer.PacketRule
             await DispatchMadeSendBuffer(bodyBuffer);
         }
 
-        public override async ValueTask NotifyReceiveData(Memory<byte> dataBuffer)
+        public override void NotifyReceiveData(Memory<byte> dataBuffer)
         {
-            await DispatchMadeReceiveBuffer(dataBuffer);
+            DispatchMadeReceiveBuffer(dataBuffer);
         }
 
         public override int WantSize => 0;
