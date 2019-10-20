@@ -17,12 +17,12 @@ namespace ObjectDeliverer.Protocol
         private MutexLocker? sharedMemoryMutex;
 
         private int sharedMemoryTotalSize = 0;
-        private int nowCounter = 0;
+        private byte nowCounter = 0;
 
         private MemoryMappedFile? sharedMenmory;
         private MemoryMappedViewStream? sharedMemoryStream;
 
-        private byte[]? receiveBuffer;
+        private Memory<byte> receiveBuffer = new Memory<byte>();
         private PollingTask? pollinger;
 
         public void Initialize(string sharedMemoryName = "SharedMemory", int sharedMemorySize = 1024)
@@ -33,7 +33,6 @@ namespace ObjectDeliverer.Protocol
 
         public override async ValueTask StartAsync()
         {
-            /*  Create a named mutex for inter-process protection of data */
             string mutexName = sharedMemoryName + "MUTEX";
             sharedMemoryTotalSize = sharedMemorySize + sizeof(byte) + sizeof(int);
 
@@ -48,7 +47,7 @@ namespace ObjectDeliverer.Protocol
 
 
             nowCounter = 0;
-            receiveBuffer = new byte[sharedMemoryTotalSize];
+            receiveBuffer = new byte[sharedMemorySize];
 
             pollinger = new PollingTask(OnReceive);
 
@@ -76,11 +75,13 @@ namespace ObjectDeliverer.Protocol
             sharedMenmory = null;
         }
 
-        private void OnReceive()
+        private async ValueTask<bool> OnReceive()
         {
+            if (sharedMemoryMutex == null || sharedMemoryStream == null) return false;
+
             int Size = 0;
 
-            sharedMemoryMutex?.Lock(() =>
+            await sharedMemoryMutex.LockAsync(async () =>
             {
                 sharedMemoryStream.Position = 0;
 
@@ -89,80 +90,72 @@ namespace ObjectDeliverer.Protocol
 
                 nowCounter = counter;
 
-                FMemory::Memcpy(&Size, SharedMemoryData + sizeof(uint8), sizeof(uint32));
+                byte[] sizeBuffer = new byte[sizeof(int)];
 
-                TempBuffer.SetNum(Size, false);
+                sharedMemoryStream.Read(sizeBuffer);
 
-                FMemory::Memcpy(TempBuffer.GetData(), SharedMemoryData + sizeof(uint8) + sizeof(uint32), FMath::Min((uint32)SharedMemorySize, Size));
+                Size = BitConverter.ToInt32(sizeBuffer);
+
+                if (Size == 0 || Size != receiveBuffer.Length) return;
+
+                await sharedMemoryStream.ReadAsync(receiveBuffer);
             });
 
             if (Size == 0) return true;
 
-            uint32 wantSize = PacketRule->GetWantSize();
+            int wantSize = PacketRule.WantSize;
 
             if (wantSize > 0)
             {
                 if (Size < wantSize) return true;
             }
 
-            int32 Offset = 0;
+            int Offset = 0;
             while (Size > 0)
             {
-                wantSize = PacketRule->GetWantSize();
-                auto receiveSize = wantSize == 0 ? Size : wantSize;
+                wantSize = PacketRule.WantSize;
+                int receiveSize = wantSize == 0 ? Size : wantSize;
 
-                ReceiveBuffer.SetNum(receiveSize, false);
-
-                int32 Read = 0;
-                FMemory::Memcpy(ReceiveBuffer.GetData(), TempBuffer.GetData() + Offset, receiveSize);
                 Offset += receiveSize;
                 Size -= receiveSize;
 
-                PacketRule->NotifyReceiveData(ReceiveBuffer);
+                PacketRule.NotifyReceiveData(receiveBuffer.Slice(Offset, receiveSize));
             }
+
             return true;
+        }
+
+        public override ValueTask SendAsync(Memory<byte> dataBuffer)
+        {
+            return PacketRule.MakeSendPacket(dataBuffer);
+        }
+
+        public override ValueTask RequestSendAsync(Memory<byte> dataBuffer)
+        {
+            if (dataBuffer.Length > sharedMemorySize) return new ValueTask();
+
+            if (sharedMemoryMutex == null || sharedMemoryStream == null) return new ValueTask();
+
+            int writeSize = dataBuffer.Length;
+
+            return sharedMemoryMutex.LockAsync(() =>
+            {
+                nowCounter++;
+                if (nowCounter == 0)
+                {
+                    nowCounter = 1;
+                }
+
+                sharedMemoryStream.Position = 0;
+                sharedMemoryStream.WriteByte(nowCounter);
+
+                sharedMemoryStream.Write(BitConverter.GetBytes(dataBuffer.Length));
+
+                return sharedMemoryStream.WriteAsync(dataBuffer);
+            });
         }
     }
 
 }
 
 
-
-//void UProtocolSharedMemory::Send(const TArray<uint8>& DataBuffer) const
-//{
-//#if PLATFORM_WINDOWS
-//	if (!SharedMemoryHandle) return;
-
-//	PacketRule->MakeSendPacket(DataBuffer);
-//#endif
-//}
-
-//void UProtocolSharedMemory::RequestSend(const TArray<uint8>& DataBuffer)
-//{
-//#if PLATFORM_WINDOWS
-//	if (DataBuffer.Num() > SharedMemorySize)
-//		return;
-
-//	if (SharedMemoryMutex && SharedMemoryData)
-//	{
-//		int32 writeSize = DataBuffer.Num();
-
-//		MutexLock::Lock(SharedMemoryMutex, [this, writeSize, &DataBuffer]()
-//		{
-//			NowCounter++;
-//			if (NowCounter == 0)
-//			{
-//				NowCounter = 1;
-//			}
-
-//			FMemory::Memcpy(SharedMemoryData, &NowCounter, sizeof(uint8));
-
-//			FMemory::Memcpy(SharedMemoryData + sizeof(uint8), &writeSize, sizeof(int32));
-//			FMemory::Memcpy(SharedMemoryData + sizeof(uint8) + sizeof(int32), DataBuffer.GetData(), writeSize);
-
-//			FlushViewOfFile(SharedMemoryData, sizeof(uint8) + sizeof(int32) + writeSize);
-//		});
-
-//	}
-//#endif
-//}

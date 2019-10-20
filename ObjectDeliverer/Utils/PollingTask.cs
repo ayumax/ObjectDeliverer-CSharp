@@ -10,7 +10,7 @@ namespace ObjectDeliverer.Utils
 
         private CancellationTokenSource? canceler;
 
-        public PollingTask(Action action)
+        public PollingTask(Func<ValueTask<bool>> action)
         {
             canceler = new CancellationTokenSource();
 
@@ -18,7 +18,10 @@ namespace ObjectDeliverer.Utils
             {
                 while(canceler?.IsCancellationRequested == false)
                 {
-                    action?.Invoke();
+                    if (await action.Invoke() == false)
+                    {
+                        break;
+                    }
 
                     await Task.Delay(1);
                 }
