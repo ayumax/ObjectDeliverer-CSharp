@@ -1,65 +1,64 @@
 // Copyright 2019 ayumax. All Rights Reserved.
-#include "Protocol/ProtocolLogWriter.h"
-#include "PacketRule/PacketRule.h"
-#include "Utils/FileUtil.h"
-#include "Misc/Paths.h"
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using System.IO;
+using System.Text;
+using System.Diagnostics;
+using ObjectDeliverer.Protocol.IP;
+using ObjectDeliverer.Utils;
 
-UProtocolLogWriter::UProtocolLogWriter()
-	: Writer(nullptr)
+namespace ObjectDeliverer.Protocol
 {
+    public class ProtocolLogWriter : ObjectDelivererProtocol
+    {
+        private string filePath = "";
+        private FileStream? streamWriter = null;
+        private Stopwatch stopwatch = new Stopwatch();
 
-}
+        public void Initialize(string filePath)
+        {
+            this.filePath = filePath;
+        }
 
-UProtocolLogWriter::~UProtocolLogWriter()
-{
+        public override async ValueTask StartAsync()
+        {
+            if (streamWriter != null)
+            {
+                await streamWriter.DisposeAsync();
+            }
 
-}
+            streamWriter = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, true);
 
-void UProtocolLogWriter::Initialize(const FString& _FilePath, bool _PathIsAbsolute)
-{
-	FilePath = _FilePath;
-	PathIsAbsolute = _PathIsAbsolute;
-}
+            stopwatch.Restart();
 
-void UProtocolLogWriter::Start()
-{
-	if (Writer) delete Writer;
+            DispatchConnected(this);
+        }
 
-	auto writePath = FilePath;
-	if (!PathIsAbsolute)
-	{
-		writePath = FPaths::Combine(FPaths::ProjectLogDir(), FilePath);
-	}
-		
-	Writer = new FileWriterUtil();
-	Writer->Open(writePath, 0);
+        public override async ValueTask CloseAsync()
+        {
+            if (streamWriter != null)
+            {
+                await streamWriter.DisposeAsync();
+                streamWriter = null;
+            }
+        }
 
-	StartTime = FDateTime::Now();
+        public override ValueTask SendAsync(Memory<byte> dataBuffer)
+        {
+            return PacketRule.MakeSendPacket(dataBuffer);
+        }
 
-	DispatchConnected(this);
-}
+        public override async ValueTask RequestSendAsync(Memory<byte> dataBuffer)
+        {
+            if (streamWriter == null) return;
 
-void UProtocolLogWriter::Close()
-{
-	if (!Writer) return;
+            await streamWriter.WriteDoubleAsync((double)stopwatch.ElapsedMilliseconds);
+            await streamWriter.WriteIntAsync(dataBuffer.Length);
+            await streamWriter.WriteAsync(dataBuffer);
+        }
 
-	Writer->Close();
-	delete Writer;
-	Writer = nullptr;
-}
-
-void UProtocolLogWriter::Send(const TArray<uint8>& DataBuffer) const
-{
-	PacketRule->MakeSendPacket(DataBuffer);
-}
-
-void UProtocolLogWriter::RequestSend(const TArray<uint8>& DataBuffer)
-{
-	if (!Writer) return;
-
-	auto time = (FDateTime::Now() - StartTime).GetTotalMilliseconds();
-	Writer->Write(time);
-	Writer->Write(DataBuffer.Num());
-	Writer->Write(DataBuffer);
+    }
 }
 

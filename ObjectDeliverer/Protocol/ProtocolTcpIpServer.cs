@@ -13,7 +13,6 @@ namespace ObjectDeliverer.Protocol
     public class ProtocolTcpIpServer : ObjectDelivererProtocol
     {
         public int ListenPort { get; set; }
-        public bool IsMultiClient { get; set; }
 
         private TcpListener? tcpListener = null;
 
@@ -21,10 +20,9 @@ namespace ObjectDeliverer.Protocol
 
         private CancellationTokenSource? Canceler;
 
-        public void Initialize(int Port, bool IsMultiClient)
+        public void Initialize(int Port)
         {
             this.ListenPort = Port;
-            this.IsMultiClient = IsMultiClient;
         }
 
         public override async ValueTask StartAsync()

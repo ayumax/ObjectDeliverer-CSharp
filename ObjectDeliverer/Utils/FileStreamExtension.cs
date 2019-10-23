@@ -32,5 +32,17 @@ namespace ObjectDeliverer.Utils
 
             return BitConverter.ToDouble(buffer.Span);
         }
+
+        public static async ValueTask WriteIntAsync(this FileStream stream, int intValue)
+        {
+            Memory<byte> buffer = BitConverter.GetBytes(intValue);
+            await stream.WriteAsync(buffer);
+        }
+
+        public static async ValueTask WriteDoubleAsync(this FileStream stream, double doubleValue)
+        {
+            Memory<byte> buffer = BitConverter.GetBytes(doubleValue);
+            await stream.WriteAsync(buffer);
+        }
     }
 }

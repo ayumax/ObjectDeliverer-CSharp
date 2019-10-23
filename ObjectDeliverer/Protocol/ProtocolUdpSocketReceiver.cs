@@ -13,7 +13,7 @@ namespace ObjectDeliverer.Protocol
     {
         public int BoundPort { get; set; }
         
-        public void InitializeWithReceiver(int boundPort)
+        public void Initialize(int boundPort)
         {
             BoundPort = boundPort;
         }

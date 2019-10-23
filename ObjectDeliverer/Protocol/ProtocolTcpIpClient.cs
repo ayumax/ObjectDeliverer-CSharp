@@ -13,7 +13,7 @@ namespace ObjectDeliverer.Protocol
         public int Port { get; set; } = 0;
         public bool AutoConnectAfterDisconnect { get; set; } = false;
 
-        void Initialize(string ipAddress, int port, bool autoConnectAfterDisconnect = false)
+        public void Initialize(string ipAddress, int port, bool autoConnectAfterDisconnect = false)
         {
             this.IpAddress = ipAddress;
             this.Port = port;

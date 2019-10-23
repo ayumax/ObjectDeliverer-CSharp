@@ -35,9 +35,12 @@ namespace ObjectDeliverer.Protocol
             this.cutFirstInterval = cutFirstInterval;
         }
 
-        public override ValueTask StartAsync()
+        public override async ValueTask StartAsync()
         {
-            streamReader?.Dispose();
+            if (streamReader != null)
+            {
+                await streamReader.DisposeAsync();
+            }
 
             streamReader = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true);
 
@@ -49,8 +52,6 @@ namespace ObjectDeliverer.Protocol
 
             receiveBuffer = new GrowBuffer();
             pollinger = new PollingTask(OnReceive);
-
-            return new ValueTask();
         }
 
         private async ValueTask<bool> OnReceive()
