@@ -11,7 +11,7 @@ namespace ObjectDeliverer.Utils
         public int Length { get; private set; } = 0;
 
         public Span<byte> SpanBuffer => InnerBuffer.AsSpan(0, Length);
-        public Memory<byte> MemoryBuffer => InnerBuffer;
+        public Memory<byte> MemoryBuffer => InnerBuffer.AsMemory(0, Length);
 
         public ref byte this[int index] => ref SpanBuffer[index];
 
