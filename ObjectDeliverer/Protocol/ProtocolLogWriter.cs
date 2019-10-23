@@ -45,18 +45,15 @@ namespace ObjectDeliverer.Protocol
             }
         }
 
-        public override ValueTask SendAsync(Memory<byte> dataBuffer)
-        {
-            return PacketRule.MakeSendPacket(dataBuffer);
-        }
-
-        public override async ValueTask RequestSendAsync(Memory<byte> dataBuffer)
+        public override async ValueTask SendAsync(Memory<byte> dataBuffer)
         {
             if (streamWriter == null) return;
+            
+            var sendBuffer = PacketRule.MakeSendPacket(dataBuffer);
 
             await streamWriter.WriteDoubleAsync((double)stopwatch.ElapsedMilliseconds);
-            await streamWriter.WriteIntAsync(dataBuffer.Length);
-            await streamWriter.WriteAsync(dataBuffer);
+            await streamWriter.WriteIntAsync(sendBuffer.Length);
+            await streamWriter.WriteAsync(sendBuffer);
         }
 
     }

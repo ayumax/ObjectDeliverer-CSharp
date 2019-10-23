@@ -6,14 +6,19 @@ namespace ObjectDeliverer.PacketRule
 {
     public class PacketRuleNodivision : PacketRuleBase
     {
-        public override async ValueTask MakeSendPacket(Memory<byte> bodyBuffer)
+        public override void Initialize()
         {
-            await DispatchMadeSendBuffer(bodyBuffer);
+            
         }
 
-        public override void NotifyReceiveData(Memory<byte> dataBuffer)
+        public override Memory<byte> MakeSendPacket(Memory<byte> bodyBuffer)
         {
-            DispatchMadeReceiveBuffer(dataBuffer);
+            return bodyBuffer;
+        }
+
+        public override IEnumerable<Memory<byte>> NotifyReceiveData(Memory<byte> dataBuffer)
+        {
+            yield return dataBuffer.ToArray();
         }
 
         public override int WantSize => 0;

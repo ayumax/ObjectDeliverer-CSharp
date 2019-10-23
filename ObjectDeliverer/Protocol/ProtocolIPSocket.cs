@@ -21,17 +21,12 @@ namespace ObjectDeliverer.Protocol
 
         public override async ValueTask StartAsync()
         {
-            await CloseSocket();
+            await CloseAsync();
 
             ReceiveBuffer.Reset(1024);
         }
 
-        public override async ValueTask CloseAsync()
-        {
-            await CloseSocket();
-        }
-
-        protected ValueTask CloseSocket()
+        public override ValueTask CloseAsync()
         {
             if (ipClient == null) return new ValueTask();
 
@@ -47,11 +42,13 @@ namespace ObjectDeliverer.Protocol
             return new ValueTask();
         }
 
-        public override async ValueTask SendAsync(Memory<byte> dataBuffer)
+        public override ValueTask SendAsync(Memory<byte> dataBuffer)
         {
-            if (ipClient == null) return;
+            if (ipClient == null) return new ValueTask();
 
-            await PacketRule.MakeSendPacket(dataBuffer);
+            var sendBuffer = PacketRule.MakeSendPacket(dataBuffer);
+
+            return ipClient.WriteAsync(sendBuffer);
         }
 
 
@@ -67,7 +64,10 @@ namespace ObjectDeliverer.Protocol
             {
                 await foreach (var buffer in ReceivedData())
                 {
-                    PacketRule.NotifyReceiveData(ReceiveBuffer.MemoryBuffer);
+                    foreach(var receivedMemory in PacketRule.NotifyReceiveData(ReceiveBuffer.MemoryBuffer))
+                    {
+                        DispatchReceiveData(this, receivedMemory);
+                    }
                 }
             });
 
@@ -125,12 +125,6 @@ namespace ObjectDeliverer.Protocol
 
         }
 
-        public override async ValueTask RequestSendAsync(Memory<byte> dataBuffer)
-        {
-            if (ipClient == null) return;
-
-            await ipClient.WriteAsync(dataBuffer);
-        }
 
         private void NotifyDisconnect()
         {

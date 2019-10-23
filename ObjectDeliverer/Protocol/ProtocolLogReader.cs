@@ -80,7 +80,10 @@ namespace ObjectDeliverer.Protocol
                             wantSize = PacketRule.WantSize;
                             int receiveSize = wantSize == 0 ? Size : wantSize;
 
-                            PacketRule.NotifyReceiveData(receiveBuffer.MemoryBuffer.Slice(Offset, receiveSize));
+                            foreach (var receivedMemory in PacketRule.NotifyReceiveData(receiveBuffer.MemoryBuffer.Slice(Offset, receiveSize)))
+                            {
+                                DispatchReceiveData(this, receivedMemory);
+                            }
 
                             Offset += receiveSize;
                             Size -= receiveSize;
@@ -138,10 +141,6 @@ namespace ObjectDeliverer.Protocol
             return new ValueTask();
         }
 
-        public override ValueTask RequestSendAsync(Memory<byte> dataBuffer)
-        {
-            return new ValueTask();
-        }
     }
 
 }

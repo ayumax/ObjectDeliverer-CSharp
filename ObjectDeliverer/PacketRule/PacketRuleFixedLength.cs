@@ -11,24 +11,23 @@ namespace ObjectDeliverer.PacketRule
 
         private GrowBuffer BufferForSend = new GrowBuffer();
 
-        public override void OnInitialize()
+        public override void Initialize()
         {
-            base.OnInitialize();
             BufferForSend.Reset(0);
         }
 
-        public override async ValueTask MakeSendPacket(Memory<byte> bodyBuffer)
+        public override Memory<byte> MakeSendPacket(Memory<byte> bodyBuffer)
         {
             BufferForSend.Clear();
             BufferForSend.CopyFrom(bodyBuffer.Span.Slice(0, Math.Min(bodyBuffer.Length, FixedSize)));
 
-            await DispatchMadeSendBuffer(BufferForSend.MemoryBuffer);
+            return BufferForSend.MemoryBuffer;
         }
 
 
-        public override void NotifyReceiveData(Memory<byte> dataBuffer)
+        public override IEnumerable<Memory<byte>> NotifyReceiveData(Memory<byte> dataBuffer)
         {
-            DispatchMadeReceiveBuffer(dataBuffer);
+            yield return dataBuffer.ToArray();
         }
 
         public override int WantSize => FixedSize;

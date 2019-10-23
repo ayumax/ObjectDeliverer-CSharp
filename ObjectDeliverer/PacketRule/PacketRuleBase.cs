@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace ObjectDeliverer.PacketRule
 {
-	public abstract class PacketRuleBase : IObservable<ReadOnlyMemory<byte>>
+	public abstract class PacketRuleBase
     {
         public enum ECNBufferEndian
         {
@@ -19,38 +19,12 @@ namespace ObjectDeliverer.PacketRule
 
 		public abstract PacketRuleBase Clone();
 
-        protected ObjectDelivererProtocol? delivererProtocol;
+        public abstract void Initialize();
 
-        public void Initialize(ObjectDelivererProtocol delivererProtocol)
-		{
-            this.delivererProtocol = delivererProtocol;
 
-            OnInitialize();
-        }
+        public abstract Memory<byte> MakeSendPacket(Memory<byte> bodyBuffer);
 
-        public virtual void OnInitialize()
-        {
-        }
+        public abstract IEnumerable<Memory<byte>> NotifyReceiveData(Memory<byte> dataBuffer);
 
-        public abstract ValueTask MakeSendPacket(Memory<byte> bodyBuffer);
-
-        public abstract void NotifyReceiveData(Memory<byte> dataBuffer);
-
-		protected async ValueTask DispatchMadeSendBuffer(Memory<byte> memoryBuffer)
-		{
-            if (delivererProtocol == null) return;
-
-            await delivererProtocol.RequestSendAsync(memoryBuffer);
-		}
-
-		protected void DispatchMadeReceiveBuffer(Memory<byte> receiveBuffer)
-		{
-            delivererProtocol?.RequestReceiveData(receiveBuffer);
-		}
-
-        public IDisposable Subscribe(IObserver<ReadOnlyMemory<byte>> observer)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

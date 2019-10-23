@@ -21,16 +21,14 @@ namespace ObjectDeliverer.PacketRule
         public int SizeLength { get; set; } = 4;
         public ECNBufferEndian SizeBufferEndian { get; set; } = ECNBufferEndian.Big;
 
-        public override void OnInitialize()
+        public override void Initialize()
         {
-            base.OnInitialize();
-
             BufferForSend.Reset(1024);
             ReceiveMode = EReceiveMode.Size;
             BodySize = 0;
         }
 
-        public override async ValueTask MakeSendPacket(Memory<byte> bodyBuffer)
+        public override Memory<byte> MakeSendPacket(Memory<byte> bodyBuffer)
         {
             var BodyBufferNum = bodyBuffer.Length;
             var SendSize = BodyBufferNum + SizeLength;
@@ -54,18 +52,20 @@ namespace ObjectDeliverer.PacketRule
 
             BufferForSend.CopyFrom(bodyBuffer.Span, SizeLength);
 
-            await DispatchMadeSendBuffer(BufferForSend.MemoryBuffer);
+            return BufferForSend.MemoryBuffer;
         }
 
-        public override void NotifyReceiveData(Memory<byte> dataBuffer)
+        public override IEnumerable<Memory<byte>> NotifyReceiveData(Memory<byte> dataBuffer)
         {
             if (ReceiveMode == EReceiveMode.Size)
             {
                 OnReceivedSize(dataBuffer);
-                return;
+                yield break;
             }
 
             OnReceivedBody(dataBuffer);
+
+            yield return dataBuffer.ToArray();
         }
 
 
@@ -91,8 +91,6 @@ namespace ObjectDeliverer.PacketRule
 
         public void OnReceivedBody(Memory<byte> dataBuffer)
         {
-            DispatchMadeReceiveBuffer(dataBuffer);
-
             BodySize = 0;
 
             ReceiveMode = EReceiveMode.Size;

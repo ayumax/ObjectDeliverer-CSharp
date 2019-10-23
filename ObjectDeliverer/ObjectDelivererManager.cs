@@ -26,9 +26,9 @@ namespace ObjectDeliverer
 		{
         }
 
-		public async ValueTask Start(ObjectDelivererProtocol Protocol, PacketRuleBase PacketRule, DeliveryBoxBase? DeliveryBox = null)
+		public ValueTask StartAsync(ObjectDelivererProtocol Protocol, PacketRuleBase PacketRule, DeliveryBoxBase? DeliveryBox = null)
 		{
-			if (Protocol == null || PacketRule == null) return;
+            if (Protocol == null || PacketRule == null) return new ValueTask();
 
 			CurrentProtocol = Protocol;
 			CurrentProtocol.SetPacketRule(PacketRule);
@@ -45,7 +45,7 @@ namespace ObjectDeliverer
 
             ConnectedList.Clear();
 
-            await CurrentProtocol.StartAsync();
+            return CurrentProtocol.StartAsync();
         }
 
 
@@ -67,7 +67,7 @@ namespace ObjectDeliverer
             Connected?.Invoke(delivererProtocol);
         }
 
-        public void Close()
+        public async ValueTask CloseAsync()
 		{
 			if (CurrentProtocol == null) return;
 
@@ -75,25 +75,28 @@ namespace ObjectDeliverer
             CurrentProtocol.Disconnected -= CurrentProtocol_Disconnected;
             CurrentProtocol.ReceiveData -= CurrentProtocol_ReceiveData;
 
-			CurrentProtocol.CloseAsync();
+			await CurrentProtocol.CloseAsync();
 
 			CurrentProtocol = null;
 		}
 
-		public async ValueTask Send(Memory<byte> DataBuffer)
+		public ValueTask SendAsync(Memory<byte> DataBuffer)
 		{
-			if (CurrentProtocol == null) return;
-			if (disposedValue) return;
+            if (CurrentProtocol == null || disposedValue) return new ValueTask();
 
-			await CurrentProtocol.SendAsync(DataBuffer);
+            return CurrentProtocol.SendAsync(DataBuffer);
 		}
 
-		public async ValueTask SendTo(Memory<byte> DataBuffer, ObjectDelivererProtocol Target)
+		public ValueTask SendToAsync(Memory<byte> DataBuffer, IProtocol Target)
 		{
-			if (CurrentProtocol == null) return;
-			if (disposedValue) return;
+            if (CurrentProtocol == null || disposedValue) return new ValueTask();
 
-			await Target.SendAsync(DataBuffer);
+            if (Target is ObjectDelivererProtocol delivererProtocol)
+            {
+                return delivererProtocol.SendAsync(DataBuffer);
+            }
+
+            return new ValueTask();
 		}
 
 
@@ -104,13 +107,13 @@ namespace ObjectDeliverer
 		#region IDisposable Support
 		private bool disposedValue = false;
 
-		protected virtual void Dispose(bool disposing)
+		protected virtual async void Dispose(bool disposing)
 		{
 			if (!disposedValue)
 			{
 				if (disposing)
 				{
-					Close();
+					await CloseAsync();
 				}
 
 				disposedValue = true;

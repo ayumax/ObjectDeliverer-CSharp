@@ -43,14 +43,7 @@ namespace ObjectDeliverer.Protocol
         public void SetPacketRule(PacketRuleBase PacketRule)
         {
             this.PacketRule = PacketRule;
-            PacketRule.Initialize(this);
-        }
-
-        public virtual ValueTask RequestSendAsync(Memory<byte> dataBuffer) => new ValueTask();
-
-        public void RequestReceiveData(Memory<byte> dataBuffer)
-        {
-            DispatchReceiveData(this, dataBuffer);
+            PacketRule.Initialize();
         }
 
 

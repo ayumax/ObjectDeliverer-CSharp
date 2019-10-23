@@ -16,11 +16,11 @@ namespace ObjectDeliverer.DeliveryBox
             await SendTo(message, null);
         }
 
-        public async ValueTask SendTo(string message, ObjectDelivererProtocol? destination)
+        public ValueTask SendTo(string message, ObjectDelivererProtocol? destination)
         {
-            if (objectDeliverer == null) return;
+            if (objectDeliverer == null) return new ValueTask();
 
-            await objectDeliverer.SendTo(UTF8Encoding.UTF8.GetBytes(message), destination!);
+            return objectDeliverer.SendToAsync(UTF8Encoding.UTF8.GetBytes(message), destination!);
         }
 
         public override void NotifyReceiveBuffer(ObjectDelivererProtocol fromObject, Memory<byte> receivedBuffer)

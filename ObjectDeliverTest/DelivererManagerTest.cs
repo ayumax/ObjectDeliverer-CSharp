@@ -14,7 +14,7 @@ namespace ObjectDeliverTest
         [Test]
         public async Task Test1()
         {
-            //var deliverer = ObjectDelivererManager.CreateObjectDelivererManager();
+            var deliverer = ObjectDelivererManager.CreateObjectDelivererManager();
             //deliverer.Connected.Subscribe(x => Console.WriteLine($"{x}"));
             //deliverer.DisConnected.Subscribe(x => Console.WriteLine($"{x}"));
             //deliverer.Received.Subscribe(x => Console.WriteLine($"{x.data}"));
@@ -26,7 +26,7 @@ namespace ObjectDeliverTest
             //await deliverer.Send(new byte[0]);
 
 
-            //await deliverer.Close();
+            await deliverer.CloseAsync();
         }
     }
 }

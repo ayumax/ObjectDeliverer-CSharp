@@ -116,10 +116,13 @@ namespace ObjectDeliverer.Protocol
                 wantSize = PacketRule.WantSize;
                 int receiveSize = wantSize == 0 ? Size : wantSize;
 
+                foreach (var receivedMemory in PacketRule.NotifyReceiveData(receiveBuffer.Slice(Offset, receiveSize)))
+                {
+                    DispatchReceiveData(this, receivedMemory);
+                }
+
                 Offset += receiveSize;
                 Size -= receiveSize;
-
-                PacketRule.NotifyReceiveData(receiveBuffer.Slice(Offset, receiveSize));
             }
 
             return true;
@@ -127,16 +130,13 @@ namespace ObjectDeliverer.Protocol
 
         public override ValueTask SendAsync(Memory<byte> dataBuffer)
         {
-            return PacketRule.MakeSendPacket(dataBuffer);
-        }
+            var sendBuffer = PacketRule.MakeSendPacket(dataBuffer);
 
-        public override ValueTask RequestSendAsync(Memory<byte> dataBuffer)
-        {
-            if (dataBuffer.Length > sharedMemorySize) return new ValueTask();
+            if (sendBuffer.Length > sharedMemorySize) return new ValueTask();
 
             if (sharedMemoryMutex == null || sharedMemoryStream == null) return new ValueTask();
 
-            int writeSize = dataBuffer.Length;
+            int writeSize = sendBuffer.Length;
 
             return sharedMemoryMutex.LockAsync(() =>
             {
@@ -149,11 +149,12 @@ namespace ObjectDeliverer.Protocol
                 sharedMemoryStream.Position = 0;
                 sharedMemoryStream.WriteByte(nowCounter);
 
-                sharedMemoryStream.Write(BitConverter.GetBytes(dataBuffer.Length));
+                sharedMemoryStream.Write(BitConverter.GetBytes(sendBuffer.Length));
 
-                return sharedMemoryStream.WriteAsync(dataBuffer);
+                return sharedMemoryStream.WriteAsync(sendBuffer);
             });
         }
+
     }
 
 }

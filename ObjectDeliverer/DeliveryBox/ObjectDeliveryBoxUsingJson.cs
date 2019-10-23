@@ -32,15 +32,15 @@ namespace ObjectDeliverer.DeliveryBox
             await SendTo(messageObject, null);
 		}
 
-		public async ValueTask SendTo(T messageObject, ObjectDelivererProtocol? destination)
+		public ValueTask SendTo(T messageObject, ObjectDelivererProtocol? destination)
 		{
             if (objectDeliverer == null)
             {
-                return;
+                return new ValueTask();
             }
 
             var buffer = JsonSerializer.SerializeToUtf8Bytes<T>(messageObject);
-            await objectDeliverer.SendTo(buffer, destination!);
+            return objectDeliverer.SendToAsync(buffer, destination!);
 		}
 	}
 }
