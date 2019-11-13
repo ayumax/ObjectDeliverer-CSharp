@@ -5,6 +5,19 @@
     <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <PackageId>ObjectDeliverer</PackageId>
+    <Version>0.0.1</Version>
+    <Authors>ayuma_x</Authors>
+    <Company>ayuma_x</Company>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/ayumax/ObjectDeliverer-CSharp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ayumax/ObjectDeliverer-CSharp</RepositoryUrl>
+    <PackageTags>tcp;udp;sharedmemopry;file</PackageTags>
+    <Copyright>Copyright (c) 2019 ayuma_x</Copyright>
+    <RepositoryType>git</RepositoryType>
   </PropertyGroup>
   
 

@@ -50,13 +50,13 @@ namespace ObjectDeliverer.Protocol
         #region IDisposable Support
         private bool disposedValue = false; 
 
-        protected virtual void Dispose(bool disposing)
+        protected virtual async void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
                 if (disposing)
                 {
-                    CloseAsync();
+                    await CloseAsync();
                 }
 
                 disposedValue = true;
