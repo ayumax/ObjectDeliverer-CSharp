@@ -18,6 +18,7 @@ namespace ObjectDeliverTest
         [Test]
         public async Task Test1()
         {
+            // create tcp/ip server
             var tcpServer = ObjectDelivererManager.CreateObjectDelivererManager();
             tcpServer.Connected += x => System.Diagnostics.Debug.WriteLine($"tcpServer connected : {x}");
             tcpServer.Disconnected += x => System.Diagnostics.Debug.WriteLine($"tcpServer disconnected : {x}");
@@ -28,6 +29,8 @@ namespace ObjectDeliverTest
                                        PacketRuleFactory.CreatePacketRuleSizeBody(4, PacketRuleBase.ECNBufferEndian.Big),
                                        null);
 
+
+            // create tcp/ip client
             var tcpClient = ObjectDelivererManager.CreateObjectDelivererManager();
             tcpClient.Connected += x => System.Diagnostics.Debug.WriteLine($"tcpClient connected : {x}");
             tcpClient.Disconnected += x => System.Diagnostics.Debug.WriteLine($"tcpClient disconnected : {x}");

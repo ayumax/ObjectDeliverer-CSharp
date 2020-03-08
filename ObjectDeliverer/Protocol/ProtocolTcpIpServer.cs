@@ -20,7 +20,7 @@ namespace ObjectDeliverer.Protocol
         private List<ProtocolIPSocket> ConnectedSockets = new List<ProtocolIPSocket>();
 
         private CancellationTokenSource? Canceler;
-        private Task? waitClientsTask;
+        private PollingTask? waitClientsTask;
 
         public void Initialize(int Port)
         {
@@ -36,37 +36,35 @@ namespace ObjectDeliverer.Protocol
             tcpListener = new TcpListener(IPAddress.Any, ListenPort);
             tcpListener.Start();
 
-            waitClientsTask = Task.Run(async () =>
+            waitClientsTask = new PollingTask(onAcceptTcpClientAsync);
+        }
+
+        private async ValueTask<bool> onAcceptTcpClientAsync()
+        {
+            if (tcpListener == null) return false;
+
+            try
             {
-                while (Canceler.IsCancellationRequested == false)
-                {
-                    try
-                    {
-                        var _client = await tcpListener.AcceptTcpClientAsync();
-                        var client = new TCPClientProtocol(_client);
+                var _client = await tcpListener.AcceptTcpClientAsync();
+                var client = new TCPClientProtocol(_client);
 
-                        var clientSocket = new ProtocolIPSocket();
-                        clientSocket.Disconnected += ClientSocket_Disconnected;
-                        clientSocket.ReceiveData += ClientSocket_ReceiveData;
-                        clientSocket.SetPacketRule(PacketRule.Clone());
+                var clientSocket = new ProtocolIPSocket();
+                clientSocket.Disconnected += ClientSocket_Disconnected;
+                clientSocket.ReceiveData += ClientSocket_ReceiveData;
+                clientSocket.SetPacketRule(PacketRule.Clone());
 
-                        ConnectedSockets.Add(clientSocket);
+                ConnectedSockets.Add(clientSocket);
 
-                        DispatchConnected(clientSocket);
+                DispatchConnected(clientSocket);
 
-                        _ = clientSocket.StartReceiveAsync(client);
-                    }
-                    catch (Exception e)
-                    {
+                clientSocket.StartPollingForReceive(client);
+            }
+            catch (SocketException)
+            {
+                return false;
+            }
 
-                    }
-                   
-                }
-            }, Canceler.Token);
-
-
-
-
+            return true;
         }
 
         private void ClientSocket_ReceiveData(ObjectDelivererProtocol delivererProtocol, Memory<byte> receivedBuffer)

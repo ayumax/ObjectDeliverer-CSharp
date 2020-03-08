@@ -22,8 +22,6 @@ namespace ObjectDeliverer.Utils
                     {
                         break;
                     }
-
-                    await Task.Delay(1);
                 }
             });
         }

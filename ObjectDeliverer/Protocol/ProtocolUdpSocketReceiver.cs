@@ -24,7 +24,7 @@ namespace ObjectDeliverer.Protocol
 
             ipClient = new UDPClientProtocol(BoundPort);
 
-            _ = StartReceiveAsync(ipClient);
+            StartPollingForReceive(ipClient);
         }
 
     }

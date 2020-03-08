@@ -52,22 +52,24 @@ namespace ObjectDeliverer.Protocol
         }
 
 
-        public async Task StartReceiveAsync(IPClientProtocol connectionSocket)
+        public void StartPollingForReceive(IPClientProtocol connectionSocket)
         {
             ipClient = connectionSocket;
-
-            Canceler = new CancellationTokenSource();
             
             ReceiveBuffer.Reset(1024);
 
-            await foreach (var buffer in ReceivedData())
+            Func<Task> pollingReceiveFunc = async () =>
             {
-                foreach (var receivedMemory in PacketRule.NotifyReceiveData(ReceiveBuffer.MemoryBuffer))
+                await foreach (var buffer in ReceivedData())
                 {
-                    // Buffer is copied because it is processed asynchronously
-                    DispatchReceiveData(this, receivedMemory.ToArray());
+                    foreach (var receivedMemory in PacketRule.NotifyReceiveData(buffer))
+                    {
+                        DispatchReceiveData(this, receivedMemory);
+                    }
                 }
-            }
+            };
+
+            receiveTask = pollingReceiveFunc();
         }
 
         private async IAsyncEnumerable<Memory<byte>> ReceivedData()

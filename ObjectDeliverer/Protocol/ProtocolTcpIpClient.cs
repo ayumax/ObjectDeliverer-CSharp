@@ -25,27 +25,21 @@ namespace ObjectDeliverer.Protocol
         {
             await base.StartAsync();
 
-            do
+            ipClient = new TCPClientProtocol();
+
+            try
             {
-                ipClient = new TCPClientProtocol();
+                await ipClient.ConnectAsync(IpAddress, Port);
 
-                try
-                {
-                    await ipClient.ConnectAsync(IpAddress, Port);
+                DispatchConnected(this);
 
-                    DispatchConnected(this);
+                StartPollingForReceive(ipClient);
 
-                    _ = StartReceiveAsync(ipClient);
-
-                }
-                catch(Exception e)
-                {
-
-                }
-
-                
             }
-            while (AutoConnectAfterDisconnect == true && IsSelfClose == false);
+            catch (SocketException)
+            {
+
+            }
 
         }
     }
