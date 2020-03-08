@@ -10,7 +10,7 @@ namespace ObjectDeliverer.Protocol
 {
     public class ProtocolIPSocket : ObjectDelivererProtocol
     {
-        protected IPClient? ipClient = null;
+        protected IPClientProtocol? ipClient = null;
         protected bool IsSelfClose = false;
 
         private Task? receiveTask = null;
@@ -52,7 +52,7 @@ namespace ObjectDeliverer.Protocol
         }
 
 
-        public Task StartReceiveAsync(IPClient connectionSocket)
+        public async Task StartReceiveAsync(IPClientProtocol connectionSocket)
         {
             ipClient = connectionSocket;
 
@@ -60,18 +60,14 @@ namespace ObjectDeliverer.Protocol
             
             ReceiveBuffer.Reset(1024);
 
-            receiveTask = Task.Run(async () =>
+            await foreach (var buffer in ReceivedData())
             {
-                await foreach (var buffer in ReceivedData())
+                foreach (var receivedMemory in PacketRule.NotifyReceiveData(ReceiveBuffer.MemoryBuffer))
                 {
-                    foreach(var receivedMemory in PacketRule.NotifyReceiveData(ReceiveBuffer.MemoryBuffer))
-                    {
-                        DispatchReceiveData(this, receivedMemory);
-                    }
+                    // Buffer is copied because it is processed asynchronously
+                    DispatchReceiveData(this, receivedMemory.ToArray());
                 }
-            });
-
-            return receiveTask;
+            }
         }
 
         private async IAsyncEnumerable<Memory<byte>> ReceivedData()

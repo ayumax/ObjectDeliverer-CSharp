@@ -23,9 +23,7 @@
 
   <ItemGroup>
     <PackageReference Include="System.Reactive" Version="4.2.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Protocol\IP\" />
+    <PackageReference Include="ValueTaskSupplement" Version="1.1.0" />
   </ItemGroup>
 
 </Project>

@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using ObjectDeliverer.Protocol.IP;
 using ObjectDeliverer.Utils;
+using ValueTaskSupplement;
 
 namespace ObjectDeliverer.Protocol
 {
@@ -19,6 +20,7 @@ namespace ObjectDeliverer.Protocol
         private List<ProtocolIPSocket> ConnectedSockets = new List<ProtocolIPSocket>();
 
         private CancellationTokenSource? Canceler;
+        private Task? waitClientsTask;
 
         public void Initialize(int Port)
         {
@@ -32,26 +34,38 @@ namespace ObjectDeliverer.Protocol
             Canceler = new CancellationTokenSource();
 
             tcpListener = new TcpListener(IPAddress.Any, ListenPort);
+            tcpListener.Start();
 
-            List<Task> pollingTasks = new List<Task>();
-
-            while (Canceler.IsCancellationRequested == false)
+            waitClientsTask = Task.Run(async () =>
             {
-                var client = new TCPClient(await tcpListener.AcceptTcpClientAsync());
+                while (Canceler.IsCancellationRequested == false)
+                {
+                    try
+                    {
+                        var _client = await tcpListener.AcceptTcpClientAsync();
+                        var client = new TCPClientProtocol(_client);
 
-                var clientSocket = new ProtocolIPSocket();
-                clientSocket.Disconnected += ClientSocket_Disconnected;
-                clientSocket.ReceiveData += ClientSocket_ReceiveData;
-                clientSocket.SetPacketRule(PacketRule.Clone());
+                        var clientSocket = new ProtocolIPSocket();
+                        clientSocket.Disconnected += ClientSocket_Disconnected;
+                        clientSocket.ReceiveData += ClientSocket_ReceiveData;
+                        clientSocket.SetPacketRule(PacketRule.Clone());
 
-                ConnectedSockets.Add(clientSocket);
+                        ConnectedSockets.Add(clientSocket);
 
-                DispatchConnected(clientSocket);
+                        DispatchConnected(clientSocket);
 
-                pollingTasks.Add(clientSocket.StartReceiveAsync(client));
-            }
+                        _ = clientSocket.StartReceiveAsync(client);
+                    }
+                    catch (Exception e)
+                    {
 
-            await Task.WhenAll(pollingTasks);
+                    }
+                   
+                }
+            }, Canceler.Token);
+
+
+
 
         }
 
@@ -98,16 +112,16 @@ namespace ObjectDeliverer.Protocol
             await Task.WhenAll(closeTasks);
         }
 
-        public override async ValueTask SendAsync(Memory<byte> dataBuffer)
+        public override ValueTask SendAsync(Memory<byte> dataBuffer)
         {
-            List<Task> sendTasks = new List<Task>();
+            List<ValueTask> sendTasks = new List<ValueTask>();
 
             foreach(var clientSocket in ConnectedSockets)
             {
-                sendTasks.Add(clientSocket.SendAsync(dataBuffer).AsTask());
+                sendTasks.Add(clientSocket.SendAsync(dataBuffer));
             }
 
-            await Task.WhenAll(sendTasks);
+            return ValueTaskEx.WhenAll(sendTasks);
         }
     }
 }

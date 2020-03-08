@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using ObjectDeliverer.Protocol.IP;
 using ObjectDeliverer.Utils;
+using System.Net.Sockets;
 
 namespace ObjectDeliverer.Protocol
 {
@@ -26,13 +27,23 @@ namespace ObjectDeliverer.Protocol
 
             do
             {
-                ipClient = new TCPClient();
+                ipClient = new TCPClientProtocol();
 
-                await ipClient.ConnectAsync(IpAddress, Port);
+                try
+                {
+                    await ipClient.ConnectAsync(IpAddress, Port);
 
-                DispatchConnected(this);
+                    DispatchConnected(this);
 
-                _ = StartReceiveAsync(ipClient);
+                    _ = StartReceiveAsync(ipClient);
+
+                }
+                catch(Exception e)
+                {
+
+                }
+
+                
             }
             while (AutoConnectAfterDisconnect == true && IsSelfClose == false);
 

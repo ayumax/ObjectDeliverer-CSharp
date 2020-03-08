@@ -20,7 +20,7 @@ namespace ObjectDeliverer.Protocol
 
         public override ValueTask StartAsync()
         {
-            ipClient = new UDPClient();
+            ipClient = new UDPClientProtocol();
 
             ipClient.ConnectAsync(DestinationIpAddress, DestinationPort);
 
