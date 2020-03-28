@@ -45,7 +45,7 @@ namespace ObjectDeliverer.Protocol
             }
         }
 
-        public override async ValueTask SendAsync(Memory<byte> dataBuffer)
+        public override async ValueTask SendAsync(ReadOnlyMemory<byte> dataBuffer)
         {
             if (streamWriter == null) return;
             

@@ -42,7 +42,7 @@ namespace ObjectDeliverer.Protocol
             return new ValueTask();
         }
 
-        public override ValueTask SendAsync(Memory<byte> dataBuffer)
+        public override ValueTask SendAsync(ReadOnlyMemory<byte> dataBuffer)
         {
             if (ipClient == null) return new ValueTask();
 
@@ -52,16 +52,16 @@ namespace ObjectDeliverer.Protocol
         }
 
 
-        protected void StartPollingForReceive(IPProtocolHelper connectionSocket)
+        public void StartPollingForReceive(IPProtocolHelper connectionSocket)
         {
             ipClient = connectionSocket;
             
             ReceiveBuffer.SetBufferSize(1024);
 
-            receiveTask = ReceivedData();
+            receiveTask = ReceivedDatas();
         }
 
-        private async Task ReceivedData()
+        private async Task ReceivedDatas()
         {
             if (ipClient == null)
             {

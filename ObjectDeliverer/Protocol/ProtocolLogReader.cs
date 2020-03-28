@@ -136,7 +136,7 @@ namespace ObjectDeliverer.Protocol
             }
         }
 
-        public override ValueTask SendAsync(Memory<byte> dataBuffer)
+        public override ValueTask SendAsync(ReadOnlyMemory<byte> dataBuffer)
         {
             return new ValueTask();
         }

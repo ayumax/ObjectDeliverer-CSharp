@@ -23,7 +23,7 @@ namespace ObjectDeliverer.Protocol
         public abstract ValueTask StartAsync();
         public abstract ValueTask CloseAsync();
 
-        public abstract ValueTask SendAsync(Memory<byte> dataBuffer);
+        public abstract ValueTask SendAsync(ReadOnlyMemory<byte> dataBuffer);
 
         protected virtual void DispatchConnected(ObjectDelivererProtocol delivererProtocol)
         {

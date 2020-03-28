@@ -30,7 +30,7 @@ namespace ObjectDeliverer.Protocol.IP
             var result = await udpClient.ReceiveAsync();
             if (buffer.Length >= result.Buffer.Length)
             {
-                ObjectDeliverer.Utils.Memory.Copy(buffer.Span, result.Buffer);
+                ObjectDeliverer.Utils.MemoryExtention.Copy(buffer.Span, result.Buffer);
                 return result.Buffer.Length;
             }
 

@@ -128,7 +128,7 @@ namespace ObjectDeliverer.Protocol
             return true;
         }
 
-        public override ValueTask SendAsync(Memory<byte> dataBuffer)
+        public override ValueTask SendAsync(ReadOnlyMemory<byte> dataBuffer)
         {
             var sendBuffer = PacketRule.MakeSendPacket(dataBuffer);
 

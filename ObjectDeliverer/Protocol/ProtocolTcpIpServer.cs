@@ -67,7 +67,7 @@ namespace ObjectDeliverer.Protocol
             return true;
         }
 
-        private void ClientSocket_ReceiveData(ObjectDelivererProtocol delivererProtocol, Memory<byte> receivedBuffer)
+        private void ClientSocket_ReceiveData(ObjectDelivererProtocol delivererProtocol, ReadOnlyMemory<byte> receivedBuffer)
         {
             DispatchReceiveData(delivererProtocol, receivedBuffer);
         }
@@ -110,7 +110,7 @@ namespace ObjectDeliverer.Protocol
             await Task.WhenAll(closeTasks);
         }
 
-        public override ValueTask SendAsync(Memory<byte> dataBuffer)
+        public override ValueTask SendAsync(ReadOnlyMemory<byte> dataBuffer)
         {
             List<ValueTask> sendTasks = new List<ValueTask>();
 

@@ -1,7 +1,7 @@
 ﻿using System;
 namespace ObjectDeliverer.Utils
 {
-    public static class Memory
+    public static class MemoryExtention
     {
         public unsafe static void Copy(Span<byte> toBuffer, ReadOnlySpan<byte> fromBuffer)
         {
