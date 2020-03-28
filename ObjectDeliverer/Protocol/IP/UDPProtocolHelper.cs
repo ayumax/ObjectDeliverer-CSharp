@@ -4,18 +4,18 @@ using System.Net.Sockets;
 
 namespace ObjectDeliverer.Protocol.IP
 {
-    public class UDPClientProtocol : IPClientProtocol
+    public class UDPProtocolHelper : IPProtocolHelper
     {
         protected UdpClient udpClient;
         private string host = "";
         private int port = 0;
 
-        public UDPClientProtocol()
+        public UDPProtocolHelper()
         {
             udpClient = new UdpClient();
         }
 
-        public UDPClientProtocol(int boundPort)
+        public UDPProtocolHelper(int boundPort)
         {
             udpClient = new UdpClient(boundPort);
         }

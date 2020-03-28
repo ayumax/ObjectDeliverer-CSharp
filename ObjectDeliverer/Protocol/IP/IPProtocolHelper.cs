@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace ObjectDeliverer.Protocol.IP
 {
-    public abstract class IPClientProtocol : IDisposable
+    public abstract class IPProtocolHelper : IDisposable
     {
         public abstract ValueTask WriteAsync(ReadOnlyMemory<byte> buffer);
         public abstract ValueTask<int> ReadAsync(Memory<byte> buffer);

@@ -112,7 +112,7 @@ namespace ObjectDeliverer.Protocol
 
                 if (streamReader.RemainSize() < bufferSize) return false;
 
-                receiveBuffer.Reset(bufferSize);
+                receiveBuffer.SetBufferSize(bufferSize);
 
                 await streamReader.ReadAsync(receiveBuffer.MemoryBuffer);
             }

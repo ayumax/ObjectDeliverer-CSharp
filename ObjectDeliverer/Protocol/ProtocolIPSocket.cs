@@ -10,7 +10,7 @@ namespace ObjectDeliverer.Protocol
 {
     public class ProtocolIPSocket : ObjectDelivererProtocol
     {
-        protected IPClientProtocol? ipClient = null;
+        protected IPProtocolHelper? ipClient = null;
         protected bool IsSelfClose = false;
 
         private Task? receiveTask = null;
@@ -23,7 +23,7 @@ namespace ObjectDeliverer.Protocol
         {
             await CloseAsync();
 
-            ReceiveBuffer.Reset(1024);
+            ReceiveBuffer.SetBufferSize(1024);
         }
 
         public override ValueTask CloseAsync()
@@ -52,32 +52,21 @@ namespace ObjectDeliverer.Protocol
         }
 
 
-        public void StartPollingForReceive(IPClientProtocol connectionSocket)
+        protected void StartPollingForReceive(IPProtocolHelper connectionSocket)
         {
             ipClient = connectionSocket;
             
-            ReceiveBuffer.Reset(1024);
+            ReceiveBuffer.SetBufferSize(1024);
 
-            Func<Task> pollingReceiveFunc = async () =>
-            {
-                await foreach (var buffer in ReceivedData())
-                {
-                    foreach (var receivedMemory in PacketRule.NotifyReceiveData(buffer))
-                    {
-                        DispatchReceiveData(this, receivedMemory);
-                    }
-                }
-            };
-
-            receiveTask = pollingReceiveFunc();
+            receiveTask = ReceivedData();
         }
 
-        private async IAsyncEnumerable<Memory<byte>> ReceivedData()
+        private async Task ReceivedData()
         {
             if (ipClient == null)
             {
                 DispatchDisconnected(this);
-                yield break;
+                return;
             }
 
             while(Canceler!.IsCancellationRequested == false)
@@ -93,27 +82,30 @@ namespace ObjectDeliverer.Protocol
 
                     var receiveSize = wantSize == 0 ? ipClient.Available : wantSize;
 
-                    ReceiveBuffer.Reset(receiveSize);
+                    ReceiveBuffer.SetBufferSize(receiveSize);
 
                     if (ipClient == null)
                     {
                         NotifyDisconnect();
-                        yield break;
+                        return;
                     }
 
                     if (ipClient.IsEnable == false)
                     {
                         NotifyDisconnect();
-                        yield break;
+                        return;
                     }
 
                     if (await ipClient.ReadAsync(ReceiveBuffer.MemoryBuffer) <= 0)
                     {
                         NotifyDisconnect();
-                        yield break;
+                        return;
                     }
 
-                    yield return ReceiveBuffer.MemoryBuffer;
+                    foreach (var receivedMemory in PacketRule.NotifyReceiveData(ReceiveBuffer.MemoryBuffer))
+                    {
+                        DispatchReceiveData(this, receivedMemory);
+                    }
                 }
                 else
                 {

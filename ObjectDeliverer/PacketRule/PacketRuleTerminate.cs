@@ -15,15 +15,15 @@ namespace ObjectDeliverer.PacketRule
 
         public override void Initialize()
         {
-            BufferForSend.Reset(0);
-            ReceiveTempBuffer.Reset(0);
-            BufferForReceive.Reset(0);
+            BufferForSend.SetBufferSize(0);
+            ReceiveTempBuffer.SetBufferSize(0);
+            BufferForReceive.SetBufferSize(0);
         }
 
-        public override Memory<byte> MakeSendPacket(Memory<byte> bodyBuffer)
+        public override ReadOnlyMemory<byte> MakeSendPacket(ReadOnlyMemory<byte> bodyBuffer)
         {
             var SendSize = bodyBuffer.Length + Terminate.Length;
-            BufferForSend.Reset(SendSize);
+            BufferForSend.SetBufferSize(SendSize);
 
             BufferForSend.CopyFrom(bodyBuffer.Span, 0);
             BufferForSend.CopyFrom(Terminate, bodyBuffer.Length);
@@ -31,7 +31,7 @@ namespace ObjectDeliverer.PacketRule
             return BufferForSend.MemoryBuffer;
         }
 
-        public override IEnumerable<Memory<byte>> NotifyReceiveData(Memory<byte> dataBuffer)
+        public override IEnumerable<ReadOnlyMemory<byte>> NotifyReceiveData(ReadOnlyMemory<byte> dataBuffer)
         {
             ReceiveTempBuffer.Add(dataBuffer.Span);
 
@@ -63,12 +63,12 @@ namespace ObjectDeliverer.PacketRule
                     yield break;
                 }
 
-                BufferForReceive.Reset(findIndex);
+                BufferForReceive.SetBufferSize(findIndex);
                 BufferForReceive.CopyFrom(ReceiveTempBuffer.AsSpan(0, findIndex));
 
-                yield return BufferForReceive.MemoryBuffer.ToArray();
+                yield return BufferForReceive.MemoryBuffer;
 
-                ReceiveTempBuffer.RemoveAt(0, findIndex + Terminate.Length);
+                ReceiveTempBuffer.RemoveRangeFromStart(0, findIndex + Terminate.Length);
 
                 findIndex = -1;
             }

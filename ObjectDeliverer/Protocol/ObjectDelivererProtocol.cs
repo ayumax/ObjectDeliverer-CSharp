@@ -11,7 +11,7 @@ namespace ObjectDeliverer.Protocol
         public event ObjectDelivererProtocolConnected? Connected;
         public delegate void ObjectDelivererProtocolDisconnected(ObjectDelivererProtocol delivererProtocol);
         public event ObjectDelivererProtocolDisconnected? Disconnected;
-        public delegate void ObjectDelivererProtocolReceiveData(ObjectDelivererProtocol delivererProtocol, Memory<byte> receivedBuffer);
+        public delegate void ObjectDelivererProtocolReceiveData(ObjectDelivererProtocol delivererProtocol, ReadOnlyMemory<byte> receivedBuffer);
         public event ObjectDelivererProtocolReceiveData? ReceiveData;
 
         protected PacketRuleBase PacketRule = PacketRuleFactory.CreatePacketRuleNodivision();
@@ -35,7 +35,7 @@ namespace ObjectDeliverer.Protocol
             Disconnected?.Invoke(delivererProtocol);
         }
 
-        protected virtual void DispatchReceiveData(ObjectDelivererProtocol delivererProtocol, Memory<byte> receivedBuffer)
+        protected virtual void DispatchReceiveData(ObjectDelivererProtocol delivererProtocol, ReadOnlyMemory<byte> receivedBuffer)
         {
             ReceiveData?.Invoke(delivererProtocol, receivedBuffer);
         }

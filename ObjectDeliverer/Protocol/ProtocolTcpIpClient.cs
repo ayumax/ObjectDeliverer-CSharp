@@ -25,7 +25,7 @@ namespace ObjectDeliverer.Protocol
         {
             await base.StartAsync();
 
-            ipClient = new TCPClientProtocol();
+            ipClient = new TCPProtocolHelper();
 
             try
             {

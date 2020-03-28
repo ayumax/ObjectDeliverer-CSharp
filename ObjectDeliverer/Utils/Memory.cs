@@ -3,7 +3,7 @@ namespace ObjectDeliverer.Utils
 {
     public static class Memory
     {
-        public unsafe static void Copy(Span<byte> toBuffer, Span<byte> fromBuffer)
+        public unsafe static void Copy(Span<byte> toBuffer, ReadOnlySpan<byte> fromBuffer)
         {
             if (toBuffer.Length != fromBuffer.Length) return;
 

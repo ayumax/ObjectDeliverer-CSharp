@@ -23,7 +23,7 @@ namespace ObjectDeliverer.DeliveryBox
             return objectDeliverer.SendToAsync(UTF8Encoding.UTF8.GetBytes(message), destination!);
         }
 
-        public override void NotifyReceiveBuffer(ObjectDelivererProtocol fromObject, Memory<byte> receivedBuffer)
+        public override void NotifyReceiveBuffer(ObjectDelivererProtocol fromObject, ReadOnlyMemory<byte> receivedBuffer)
         {
             Received?.Invoke(UTF8Encoding.UTF8.GetString(receivedBuffer.Span), fromObject);
         }

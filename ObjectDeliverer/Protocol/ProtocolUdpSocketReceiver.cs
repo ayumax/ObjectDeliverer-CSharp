@@ -22,7 +22,7 @@ namespace ObjectDeliverer.Protocol
         {
             await base.StartAsync();
 
-            ipClient = new UDPClientProtocol(BoundPort);
+            ipClient = new UDPProtocolHelper(BoundPort);
 
             StartPollingForReceive(ipClient);
         }

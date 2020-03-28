@@ -23,17 +23,17 @@ namespace ObjectDeliverer.PacketRule
 
         public override void Initialize()
         {
-            BufferForSend.Reset(1024);
+            BufferForSend.SetBufferSize(1024);
             ReceiveMode = EReceiveMode.Size;
             BodySize = 0;
         }
 
-        public override Memory<byte> MakeSendPacket(Memory<byte> bodyBuffer)
+        public override ReadOnlyMemory<byte> MakeSendPacket(ReadOnlyMemory<byte> bodyBuffer)
         {
             var BodyBufferNum = bodyBuffer.Length;
             var SendSize = BodyBufferNum + SizeLength;
 
-            BufferForSend.Reset(SendSize);
+            BufferForSend.SetBufferSize(SendSize);
 
             for (int i = 0; i < SizeLength; ++i)
             {
@@ -55,7 +55,7 @@ namespace ObjectDeliverer.PacketRule
             return BufferForSend.MemoryBuffer;
         }
 
-        public override IEnumerable<Memory<byte>> NotifyReceiveData(Memory<byte> dataBuffer)
+        public override IEnumerable<ReadOnlyMemory<byte>> NotifyReceiveData(ReadOnlyMemory<byte> dataBuffer)
         {
             if (ReceiveMode == EReceiveMode.Size)
             {
@@ -65,11 +65,11 @@ namespace ObjectDeliverer.PacketRule
 
             OnReceivedBody(dataBuffer);
 
-            yield return dataBuffer.ToArray();
+            yield return dataBuffer;
         }
 
 
-        public void OnReceivedSize(Memory<byte> dataBuffer)
+        public void OnReceivedSize(ReadOnlyMemory<byte> dataBuffer)
         {
             BodySize = 0;
             for (int i = 0; i < SizeLength; ++i)
@@ -89,7 +89,7 @@ namespace ObjectDeliverer.PacketRule
             ReceiveMode = EReceiveMode.Body;
         }
 
-        public void OnReceivedBody(Memory<byte> dataBuffer)
+        public void OnReceivedBody(ReadOnlyMemory<byte> dataBuffer)
         {
             BodySize = 0;
 

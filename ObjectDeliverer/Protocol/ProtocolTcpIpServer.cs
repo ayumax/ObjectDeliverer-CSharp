@@ -46,7 +46,7 @@ namespace ObjectDeliverer.Protocol
             try
             {
                 var _client = await tcpListener.AcceptTcpClientAsync();
-                var client = new TCPClientProtocol(_client);
+                var client = new TCPProtocolHelper(_client);
 
                 var clientSocket = new ProtocolIPSocket();
                 clientSocket.Disconnected += ClientSocket_Disconnected;

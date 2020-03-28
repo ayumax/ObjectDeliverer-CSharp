@@ -13,7 +13,7 @@ namespace ObjectDeliverer.DeliveryBox
 
         }
 
-        public abstract void NotifyReceiveBuffer(ObjectDelivererProtocol FromObject, Memory<byte> dataBuffer);
+        public abstract void NotifyReceiveBuffer(ObjectDelivererProtocol FromObject, ReadOnlyMemory<byte> dataBuffer);
     }
     
 }

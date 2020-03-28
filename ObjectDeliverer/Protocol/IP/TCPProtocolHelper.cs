@@ -4,16 +4,16 @@ using System.Net.Sockets;
 
 namespace ObjectDeliverer.Protocol.IP
 {
-    public class TCPClientProtocol : IPClientProtocol
+    public class TCPProtocolHelper : IPProtocolHelper
     {
         protected TcpClient tcpClient;
 
-        public TCPClientProtocol()
+        public TCPProtocolHelper()
         {
             tcpClient = new TcpClient();
         }
 
-        public TCPClientProtocol(TcpClient tcpClient)
+        public TCPProtocolHelper(TcpClient tcpClient)
         {
             this.tcpClient = tcpClient;
         }

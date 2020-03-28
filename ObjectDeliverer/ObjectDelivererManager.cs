@@ -14,7 +14,7 @@ namespace ObjectDeliverer
         public event ObjectDelivererManagerDisconnected? Connected;
         public delegate void ObjectDelivererManagerDisconnected(IProtocol delivererProtocol);
         public event ObjectDelivererManagerDisconnected? Disconnected;
-        public delegate void ObjectDelivererManagerReceiveData(IProtocol delivererProtocol, Memory<byte> dataBuffer);
+        public delegate void ObjectDelivererManagerReceiveData(IProtocol delivererProtocol, ReadOnlyMemory<byte> dataBuffer);
         public event ObjectDelivererManagerReceiveData? Received;
 
         private ObjectDelivererProtocol? CurrentProtocol;
@@ -49,7 +49,7 @@ namespace ObjectDeliverer
         }
 
 
-        private void CurrentProtocol_ReceiveData(ObjectDelivererProtocol delivererProtocol, Memory<byte> receivedBuffer)
+        private void CurrentProtocol_ReceiveData(ObjectDelivererProtocol delivererProtocol, ReadOnlyMemory<byte> receivedBuffer)
         {
             Received?.Invoke(delivererProtocol, receivedBuffer);
             DeliveryBox?.NotifyReceiveBuffer(delivererProtocol, receivedBuffer);

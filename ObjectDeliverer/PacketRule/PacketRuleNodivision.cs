@@ -11,14 +11,14 @@ namespace ObjectDeliverer.PacketRule
             
         }
 
-        public override Memory<byte> MakeSendPacket(Memory<byte> bodyBuffer)
+        public override ReadOnlyMemory<byte> MakeSendPacket(ReadOnlyMemory<byte> bodyBuffer)
         {
             return bodyBuffer;
         }
 
-        public override IEnumerable<Memory<byte>> NotifyReceiveData(Memory<byte> dataBuffer)
+        public override IEnumerable<ReadOnlyMemory<byte>> NotifyReceiveData(ReadOnlyMemory<byte> dataBuffer)
         {
-            yield return dataBuffer.ToArray();
+            yield return dataBuffer;
         }
 
         public override int WantSize => 0;

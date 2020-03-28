@@ -13,21 +13,23 @@ namespace ObjectDeliverer.PacketRule
 
         public override void Initialize()
         {
-            BufferForSend.Reset(0);
+            BufferForSend.SetBufferSize(FixedSize);
         }
 
-        public override Memory<byte> MakeSendPacket(Memory<byte> bodyBuffer)
+        public override ReadOnlyMemory<byte> MakeSendPacket(ReadOnlyMemory<byte> bodyBuffer)
         {
             BufferForSend.Clear();
-            BufferForSend.CopyFrom(bodyBuffer.Span.Slice(0, Math.Min(bodyBuffer.Length, FixedSize)));
+
+            ReadOnlySpan<byte> sendPacketSpan = bodyBuffer.Slice(0, Math.Min(bodyBuffer.Length, FixedSize)).Span;
+            BufferForSend.CopyFrom(sendPacketSpan);
 
             return BufferForSend.MemoryBuffer;
         }
 
 
-        public override IEnumerable<Memory<byte>> NotifyReceiveData(Memory<byte> dataBuffer)
+        public override IEnumerable<ReadOnlyMemory<byte>> NotifyReceiveData(ReadOnlyMemory<byte> dataBuffer)
         {
-            yield return dataBuffer.ToArray();
+            yield return dataBuffer;
         }
 
         public override int WantSize => FixedSize;

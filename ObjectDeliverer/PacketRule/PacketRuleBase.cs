@@ -22,9 +22,9 @@ namespace ObjectDeliverer.PacketRule
         public abstract void Initialize();
 
 
-        public abstract Memory<byte> MakeSendPacket(Memory<byte> bodyBuffer);
+        public abstract ReadOnlyMemory<byte> MakeSendPacket(ReadOnlyMemory<byte> bodyBuffer);
 
-        public abstract IEnumerable<Memory<byte>> NotifyReceiveData(Memory<byte> dataBuffer);
+        public abstract IEnumerable<ReadOnlyMemory<byte>> NotifyReceiveData(ReadOnlyMemory<byte> dataBuffer);
 
     }
 }
