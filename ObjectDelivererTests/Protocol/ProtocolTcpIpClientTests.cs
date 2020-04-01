@@ -1,0 +1,137 @@
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using ObjectDeliverer.Protocol;
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Linq;
+using ObjectDeliverer.PacketRule;
+
+namespace ObjectDeliverer.Protocol.Tests
+{
+    [TestClass()]
+    public class ProtocolTcpIpClientTests
+    {
+        [TestMethod()]
+        public async Task ConnectTest()
+        {
+            CountdownEvent condition0 = new CountdownEvent(2);
+
+            var client = new ProtocolTcpIpClient()
+            {
+                IpAddress = "127.0.0.1",
+                Port = 9013,
+                AutoConnectAfterDisconnect = true,
+            };
+            client.SetPacketRule(new PacketRuleFixedLength() { FixedSize = 3 });
+
+            var server = new ProtocolTcpIpServer()
+            {
+                ListenPort = 9013,
+            };
+            server.SetPacketRule(new PacketRuleFixedLength() { FixedSize = 3 });
+           
+            using (client.Connected.Subscribe(x => condition0.Signal()))
+            using (server.Connected.Subscribe(x => condition0.Signal()))
+            {
+                await server.StartAsync();
+
+                await client.StartAsync();
+
+                if (!condition0.Wait(1000))
+                {
+                    Assert.Fail();
+                }
+            }
+
+
+            {
+                var expected = new byte[] { 1, 2, 3 };
+
+                using (var condition = new CountdownEvent(100))
+                using (server.ReceiveData.Subscribe(x =>
+                {
+                    var expected2 = new byte[] { (byte)condition.CurrentCount, 2, 3 };
+                    Assert.IsTrue(x.Buffer.ToArray().SequenceEqual(expected2));
+                    condition.Signal();
+                }))
+                {
+                    for (byte i = 100; i > 0; --i)
+                    {
+                        expected[0] = i;
+                        await client.SendAsync(expected);
+                    }
+                    
+
+                    if (!condition.Wait(1000))
+                    {
+                        Assert.Fail();
+                    }
+                }
+            }
+
+            {
+                var expected = new byte[] { 1, 2, 3 };
+
+                using (var condition = new CountdownEvent(100))
+                using (client.ReceiveData.Subscribe(x =>
+                {
+                    var expected2 = new byte[] { (byte)condition.CurrentCount, 2, 3 };
+                    Assert.IsTrue(x.Buffer.ToArray().SequenceEqual(expected2));
+                    condition.Signal();
+                }))
+                {
+                    for (byte i = 100; i > 0; --i)
+                    {
+                        expected[0] = i;
+                        await server.SendAsync(expected);
+                    }
+
+                    if (!condition.Wait(1000))
+                    {
+                        Assert.Fail();
+                    }
+                }
+            }
+
+
+            {
+                using (var condition = new CountdownEvent(1))
+                using (client.Disconnected.Subscribe(x => condition.Signal()))
+                {
+                    await server.CloseAsync();
+
+                    if (!condition.Wait(1000))
+                    {
+                        Assert.Fail();
+                    }
+                }     
+            }
+
+            {
+                using (var condition = new CountdownEvent(1))
+                using (client.Connected.Subscribe(x => condition.Signal()))
+                {
+                    await server.StartAsync();
+
+                    if (!condition.Wait(1000))
+                    {
+                        Assert.Fail();
+                    }
+                }
+
+                using (var condition = new CountdownEvent(1))
+                using (server.Disconnected.Subscribe(x => condition.Signal()))
+                {
+                    await client.CloseAsync();
+
+                    if (!condition.Wait(1000))
+                    {
+                        Assert.Fail();
+                    }
+                }   
+            }
+        }
+    }
+}
