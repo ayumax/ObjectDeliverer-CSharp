@@ -68,13 +68,6 @@ deliverer.ReceiveData.Subscribe(x => Console.WriteLine($"received length = {x.Bu
 
 // Start the ObjectDelivererManager
 await deliverer.StartAsync(
-    new ProtocolTcpIpClient()
-    {
-        IpAddress = "127.0.0.1",
-        Port = 9013,
-    },
-    new PacketRuleFixedLength()
-    {
-        FixedSize = 10,
-    });
+    new ProtocolTcpIpClient() { IpAddress = "127.0.0.1", Port = 9013 },
+    new PacketRuleFixedLength() { FixedSize = 10 });
 ```
