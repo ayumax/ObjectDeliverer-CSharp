@@ -81,9 +81,6 @@ deliverer.ReceiveData.Subscribe(x =>
 // Start the ObjectDelivererManager
 await deliverer.StartAsync(
     new ProtocolTcpIpClient() { IpAddress = "127.0.0.1", Port = 9013 },
-<<<<<<< HEAD
-    new PacketRuleFixedLength() { FixedSize = 10 });
-=======
     new PacketRuleFixedLength() { FixedSize = 10 },
     new Utf8StringDeliveryBox());
 
@@ -236,7 +233,6 @@ deliverer.ReceiveData.Subscribe(x => Console.WriteLine(x.Message.Hoge()));
 var sampleObj = new SampleObj2() { Prop = 1, StringProp = "abc" };
 await deliverer.SendMessageAsync(sampleObj);
 
->>>>>>> devel
 ```
 
 
