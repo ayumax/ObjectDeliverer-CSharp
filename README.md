@@ -71,6 +71,9 @@ deliverer.Connected.Subscribe(async x =>
     await deliverer.SendAsync(new byte[] { 0x00, 0x12, 0x23 });
 });
 
+// Watching for disconnection events
+deliverer.Disconnected.Subscribe(x => Console.WriteLine("disconnected"));
+	    
 // Watching for incoming events
 deliverer.ReceiveData.Subscribe(x => 
 {
