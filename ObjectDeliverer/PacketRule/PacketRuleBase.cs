@@ -10,14 +10,6 @@ namespace ObjectDeliverer.PacketRule
 {
     public abstract class PacketRuleBase
     {
-        public enum ECNBufferEndian
-        {
-            /** Big Endian */
-            Big = 0,
-            /** Little Endian */
-            Little,
-        }
-
         public abstract int WantSize { get; }
 
         public abstract PacketRuleBase Clone();

@@ -8,6 +8,14 @@ using System.Threading.Tasks;
 
 namespace ObjectDeliverer.PacketRule
 {
+    public enum ECNBufferEndian
+    {
+        /** Big Endian */
+        Big = 0,
+        /** Little Endian */
+        Little,
+    }
+
     public class PacketRuleSizeBody : PacketRuleBase
     {
         private readonly GrowBuffer bufferForSend = new GrowBuffer();
