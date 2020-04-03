@@ -142,7 +142,7 @@ await deliverer.StartAsync(
 // Header(BodySize) + Body
 await deliverer.StartAsync(
     new ProtocolTcpIpClient() { IpAddress = "127.0.0.1", Port = 9013 },
-    new PacketRuleSizeBody() { SizeLength = 4, SizeBufferEndian = PacketRuleBase.ECNBufferEndian.Big });
+    new PacketRuleSizeBody() { SizeLength = 4, SizeBufferEndian = ECNBufferEndian.Big });
 
 // Split by terminal symbol
 await deliverer.StartAsync(
@@ -188,7 +188,7 @@ var deliverer = new ObjectDelivererManager<SampleObj>();
 
 await deliverer.StartAsync(
     new ProtocolTcpIpClient() { IpAddress = "127.0.0.1", Port = 9013 },
-    new PacketRuleSizeBody() { SizeLength = 4, SizeBufferEndian = PacketRuleBase.ECNBufferEndian.Big },
+    new PacketRuleSizeBody() { SizeLength = 4, SizeBufferEndian = ECNBufferEndian.Big },
     new ObjectDeliveryBoxUsingJson<SampleObj>());
 
 deliverer.ReceiveData.Subscribe(x => Console.WriteLine(x.Message.Hoge()));
@@ -228,7 +228,7 @@ var deliverer = new ObjectDelivererManager<SampleObj2>();
 
 await deliverer.StartAsync(
     new ProtocolTcpIpClient() { IpAddress = "127.0.0.1", Port = 9013 },
-    new PacketRuleSizeBody() { SizeLength = 4, SizeBufferEndian = PacketRuleBase.ECNBufferEndian.Big },
+    new PacketRuleSizeBody() { SizeLength = 4, SizeBufferEndian = ECNBufferEndian.Big },
     new ObjectDeliveryBoxUsingMessagePack<SampleObj2>());
 
 deliverer.ReceiveData.Subscribe(x => Console.WriteLine(x.Message.Hoge()));

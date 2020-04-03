@@ -17,7 +17,7 @@ namespace ObjectDeliverer.PacketRule.Tests
             {
                 var packetRule = new PacketRuleSizeBody()
                 {
-                    SizeBufferEndian = PacketRuleBase.ECNBufferEndian.Big,
+                    SizeBufferEndian = ECNBufferEndian.Big,
                     SizeLength = 4,
                 };
 
@@ -38,7 +38,7 @@ namespace ObjectDeliverer.PacketRule.Tests
             {
                 var packetRule = new PacketRuleSizeBody()
                 {
-                    SizeBufferEndian = PacketRuleBase.ECNBufferEndian.Little,
+                    SizeBufferEndian = ECNBufferEndian.Little,
                     SizeLength = 4,
                 };
 
@@ -63,7 +63,7 @@ namespace ObjectDeliverer.PacketRule.Tests
             {
                 var packetrule = new PacketRuleSizeBody()
                 {
-                    SizeBufferEndian = PacketRuleBase.ECNBufferEndian.Big,
+                    SizeBufferEndian = ECNBufferEndian.Big,
                     SizeLength = 4,
                 };
                 packetrule.Initialize();
@@ -90,7 +90,7 @@ namespace ObjectDeliverer.PacketRule.Tests
             {
                 var packetrule = new PacketRuleSizeBody()
                 {
-                    SizeBufferEndian = PacketRuleBase.ECNBufferEndian.Little,
+                    SizeBufferEndian = ECNBufferEndian.Little,
                     SizeLength = 4,
                 };
                 packetrule.Initialize();
