@@ -13,13 +13,15 @@ namespace ObjectDeliverer.Protocol
 {
     public class ProtocolIPSocket : ObjectDelivererProtocol
     {
-        private readonly GrowBuffer receiveBuffer = new GrowBuffer();
         private Task? receiveTask = null;
-        private CancellationTokenSource? canceler;
 
         public int ReceiveBufferSize { get; set; } = 8192;
 
         public int SendBufferSize { get; set; } = 8192;
+
+        protected GrowBuffer ReceiveBuffer { get; set; } = new GrowBuffer();
+
+        protected CancellationTokenSource? Canceler { get; set; }
 
         protected IPProtocolHelper? IpClient { get; set; } = null;
 
@@ -27,7 +29,7 @@ namespace ObjectDeliverer.Protocol
 
         public override ValueTask StartAsync()
         {
-            this.receiveBuffer.SetBufferSize(1024);
+            this.ReceiveBuffer.SetBufferSize(1024);
             return default(ValueTask);
         }
 
@@ -39,10 +41,10 @@ namespace ObjectDeliverer.Protocol
 
             this.IpClient.Close();
 
-            this.canceler?.Cancel();
+            this.Canceler?.Cancel();
 
             this.IpClient = null;
-            this.canceler = null;
+            this.Canceler = null;
 
             return default(ValueTask);
         }
@@ -60,77 +62,11 @@ namespace ObjectDeliverer.Protocol
         {
             this.IpClient = connectionSocket;
 
-            this.receiveBuffer.SetBufferSize(1024);
+            this.ReceiveBuffer.SetBufferSize(1024);
 
             this.receiveTask = this.ReceivedDatas();
         }
 
-        private async Task ReceivedDatas()
-        {
-            if (this.IpClient == null)
-            {
-                this.DispatchDisconnected(this);
-                return;
-            }
-
-            this.canceler = new CancellationTokenSource();
-
-            while (this.canceler!.IsCancellationRequested == false)
-            {
-                if (this.IpClient?.Available > 0)
-                {
-                    int wantSize = this.PacketRule.WantSize;
-
-                    if (wantSize > 0)
-                    {
-                        if (this.IpClient.Available < wantSize) continue;
-                    }
-
-                    var receiveSize = wantSize == 0 ? this.IpClient.Available : wantSize;
-
-                    this.receiveBuffer.SetBufferSize(receiveSize);
-
-                    if (this.IpClient == null)
-                    {
-                        this.NotifyDisconnect();
-                        return;
-                    }
-
-                    if (await this.IpClient.ReadAsync(this.receiveBuffer.MemoryBuffer) <= 0)
-                    {
-                        this.NotifyDisconnect();
-                        return;
-                    }
-
-                    foreach (var receivedMemory in this.PacketRule.MakeReceivedPacket(this.receiveBuffer.MemoryBuffer))
-                    {
-                        this.DispatchReceiveData(new DeliverData()
-                        {
-                            Sender = this,
-                            Buffer = receivedMemory,
-                        });
-                    }
-                }
-                else
-                {
-                    if (this.IpClient?.IsEnable == false)
-                    {
-                        this.NotifyDisconnect();
-                        return;
-                    }
-
-                    await Task.Delay(1);
-                }
-            }
-        }
-
-        private void NotifyDisconnect()
-        {
-            if (!this.IsSelfClose)
-            {
-                this.IpClient?.Close();
-                this.DispatchDisconnected(this);
-            }
-        }
+        protected virtual Task ReceivedDatas() => Task.CompletedTask;
     }
 }

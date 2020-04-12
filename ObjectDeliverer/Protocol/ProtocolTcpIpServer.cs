@@ -80,7 +80,7 @@ namespace ObjectDeliverer.Protocol
                 var acceptedTcpClient = await this.tcpListener.AcceptTcpClientAsync();
                 var acceptedTcpClientWrapper = new TCPProtocolHelper(acceptedTcpClient, this.ReceiveBufferSize, this.SendBufferSize);
 
-                var clientSocket = new ProtocolIPSocket();
+                var clientSocket = new ProtocolTcpIpClient();
                 clientSocket.Disconnected.Subscribe(x => this.ClientSocket_Disconnected(x.Target));
                 clientSocket.ReceiveData.Subscribe(x => this.DispatchReceiveData(x));
                 clientSocket.SetPacketRule(this.PacketRule.Clone());

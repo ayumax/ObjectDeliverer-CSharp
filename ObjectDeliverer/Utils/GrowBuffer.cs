@@ -28,6 +28,8 @@ namespace ObjectDeliverer.Utils
 
         public Span<byte> AsSpan(int position, int length) => this.innerBuffer.AsSpan(position, length);
 
+        public ReadOnlyMemory<byte> AsReadOnlyMemory(int position, int length) => this.innerBuffer.AsMemory(position, length);
+
         public bool SetBufferSize(int newSize = 0)
         {
             bool isGrow = false;

@@ -13,8 +13,7 @@ namespace ObjectDeliverer.Protocol.Tests
     [TestClass()]
     public class ProtocolSharedMemoryTests
     {
-        [TestMethod()]
-        public async Task InitializeTest()
+        private async Task TestSharedMemoryAsync(PacketRuleBase packetRule)
         {
             CountdownEvent condition0 = new CountdownEvent(2);
 
@@ -23,14 +22,14 @@ namespace ObjectDeliverer.Protocol.Tests
                 SharedMemoryName = "test_shared_memory",
                 SharedMemorySize = 10,
             };
-            sender.SetPacketRule(new PacketRuleFixedLength() { FixedSize = 3 });
+            sender.SetPacketRule(packetRule.Clone());
 
             var receiver = new ProtocolSharedMemory()
             {
                 SharedMemoryName = "test_shared_memory",
                 SharedMemorySize = 10,
             };
-            receiver.SetPacketRule(new PacketRuleFixedLength() { FixedSize = 3 });
+            receiver.SetPacketRule(packetRule.Clone());
 
             using (sender.Connected.Subscribe(x => condition0.Signal()))
             using (receiver.Connected.Subscribe(x => condition0.Signal()))
@@ -82,6 +81,18 @@ namespace ObjectDeliverer.Protocol.Tests
                     }
                 }
             }
+
+            await sender.CloseAsync();
+            await receiver.CloseAsync();
+        }
+
+        [TestMethod()]
+        public async Task InitializeTest()
+        {
+            await TestSharedMemoryAsync(new PacketRuleSizeBody());
+            await TestSharedMemoryAsync(new PacketRuleFixedLength() { FixedSize = 3 });
+            await TestSharedMemoryAsync(new PacketRuleNodivision());
+            await TestSharedMemoryAsync(new PacketRuleTerminate() { Terminate = new byte[] { 0xEE, 0xFF } });
         }
     }
 }
