@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
@@ -30,16 +31,15 @@ namespace ObjectDeliverer.Protocol.IP
 
         protected UdpClient UdpClient { get; set; }
 
-        public override async ValueTask<int> ReadAsync(Memory<byte> buffer)
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer)
+        {
+            return default(ValueTask<int>);
+        }
+
+        public override async ValueTask<(byte[] Buffer, EndPoint? RemoteEndPoint)> ReceiveAsync()
         {
             var result = await this.UdpClient.ReceiveAsync();
-            if (buffer.Length >= result.Buffer.Length)
-            {
-                ObjectDeliverer.Utils.MemoryExtention.Copy(buffer.Span, result.Buffer);
-                return result.Buffer.Length;
-            }
-
-            return 0;
+            return (result.Buffer, result.RemoteEndPoint);
         }
 
         public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer)

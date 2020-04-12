@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
@@ -44,6 +45,13 @@ namespace ObjectDeliverer.Protocol.IP
         public override ValueTask<int> ReadAsync(Memory<byte> buffer)
         {
             return this.TcpClient.GetStream().ReadAsync(buffer);
+        }
+
+        public override async ValueTask<(byte[] Buffer, EndPoint? RemoteEndPoint)> ReceiveAsync()
+        {
+            var tcpBuffer = new byte[this.TcpClient.Available];
+            var result = await this.TcpClient.GetStream().ReadAsync(tcpBuffer);
+            return (tcpBuffer, this.TcpClient.Client?.RemoteEndPoint);
         }
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer)

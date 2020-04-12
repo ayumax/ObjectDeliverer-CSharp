@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -18,6 +19,8 @@ namespace ObjectDeliverer.Protocol.IP
         public abstract ValueTask WriteAsync(ReadOnlyMemory<byte> buffer);
 
         public abstract ValueTask<int> ReadAsync(Memory<byte> buffer);
+
+        public abstract ValueTask<(byte[] Buffer, EndPoint? RemoteEndPoint)> ReceiveAsync();
 
         public abstract Task ConnectAsync(string host, int port);
 

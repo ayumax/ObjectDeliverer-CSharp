@@ -13,8 +13,7 @@ namespace ObjectDeliverer.Protocol.Tests
     [TestClass()]
     public class ProtocolTcpIpClientTests
     {
-        [TestMethod()]
-        public async Task ConnectTest()
+        private async Task TestTCPAsync(PacketRuleBase packetRule)
         {
             CountdownEvent condition0 = new CountdownEvent(2);
 
@@ -24,14 +23,14 @@ namespace ObjectDeliverer.Protocol.Tests
                 Port = 9013,
                 AutoConnectAfterDisconnect = true,
             };
-            client.SetPacketRule(new PacketRuleFixedLength() { FixedSize = 3 });
+            client.SetPacketRule(packetRule.Clone());
 
             var server = new ProtocolTcpIpServer()
             {
                 ListenPort = 9013,
             };
-            server.SetPacketRule(new PacketRuleFixedLength() { FixedSize = 3 });
-           
+            server.SetPacketRule(packetRule.Clone());
+
             using (client.Connected.Subscribe(x => condition0.Signal()))
             using (server.Connected.Subscribe(x => condition0.Signal()))
             {
@@ -44,7 +43,6 @@ namespace ObjectDeliverer.Protocol.Tests
                     Assert.Fail();
                 }
             }
-
 
             {
                 var expected = new byte[] { 1, 2, 3 };
@@ -62,7 +60,6 @@ namespace ObjectDeliverer.Protocol.Tests
                         expected[0] = i;
                         await client.SendAsync(expected);
                     }
-                    
 
                     if (!condition.Wait(1000))
                     {
@@ -88,7 +85,7 @@ namespace ObjectDeliverer.Protocol.Tests
                         await server.SendAsync(expected);
                     }
 
-                    if (!condition.Wait(1000))
+                    if (!condition.Wait(3000))
                     {
                         Assert.Fail();
                     }
@@ -106,7 +103,7 @@ namespace ObjectDeliverer.Protocol.Tests
                     {
                         Assert.Fail();
                     }
-                }     
+                }
             }
 
             {
@@ -130,8 +127,19 @@ namespace ObjectDeliverer.Protocol.Tests
                     {
                         Assert.Fail();
                     }
-                }   
+                }
             }
+
+            await client.CloseAsync();
+            await server.CloseAsync();
+        }
+
+        [TestMethod()]
+        public async Task ConnectTest()
+        {
+            await TestTCPAsync(new PacketRuleSizeBody());
+            await TestTCPAsync(new PacketRuleFixedLength() { FixedSize = 3 });
+            await TestTCPAsync(new PacketRuleTerminate() { Terminate = new byte[] { 0xEE, 0xFF } });
         }
     }
 }
