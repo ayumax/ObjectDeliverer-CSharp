@@ -26,5 +26,60 @@ namespace ObjectDeliverer.Protocol
 
             this.DispatchConnected(this);
         }
+
+        protected override async Task ReceivedDatas()
+        {
+            if (this.IpClient == null)
+            {
+                this.DispatchDisconnected(this);
+                return;
+            }
+
+            this.Canceler = new CancellationTokenSource();
+
+            while (this.Canceler!.IsCancellationRequested == false)
+            {
+                if (this.IpClient?.Available > 0)
+                {
+                    this.ReceiveBuffer.SetBufferSize(this.IpClient.Available);
+                    var (recievedBuffer, endPoint) = await this.IpClient.ReceiveAsync();
+                    ReadOnlyMemory<byte> readOnlyMemory = recievedBuffer;
+
+                    int startOffset = 0;
+                    int wantSize = 0;
+                    int remainSize = recievedBuffer.Length;
+
+                    while (remainSize > 0)
+                    {
+                        wantSize = this.PacketRule.WantSize;
+
+                        if (wantSize > remainSize) break;
+
+                        if (wantSize > 0)
+                        {
+                            if (remainSize < wantSize) continue;
+                        }
+
+                        wantSize = wantSize == 0 ? remainSize : wantSize;
+
+                        foreach (var receivedMemory in this.PacketRule.MakeReceivedPacket(readOnlyMemory.Slice(startOffset, wantSize)))
+                        {
+                            this.DispatchReceiveData(new DeliverData()
+                            {
+                                Sender = this,
+                                Buffer = receivedMemory,
+                            });
+                        }
+
+                        startOffset += wantSize;
+                        remainSize -= wantSize;
+                    }
+                }
+                else
+                {
+                    await Task.Delay(1);
+                }
+            }
+        }
     }
 }

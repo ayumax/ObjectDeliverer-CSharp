@@ -13,8 +13,7 @@ namespace ObjectDeliverer.Protocol.Tests
     [TestClass()]
     public class ProtocolLogWriterTests
     {
-        [TestMethod()]
-        public async Task InitializeTest()
+        private async Task TestLogFileAsync(PacketRuleBase packetRule)
         {
             var tempFilePath = System.IO.Path.GetTempFileName();
 
@@ -25,7 +24,7 @@ namespace ObjectDeliverer.Protocol.Tests
                 {
                     FilePath = tempFilePath,
                 };
-                sender.SetPacketRule(new PacketRuleFixedLength() { FixedSize = 3 });
+                sender.SetPacketRule(packetRule.Clone());
                 sender.Connected.Subscribe(x => condition0.Signal());
 
                 await sender.StartAsync();
@@ -53,7 +52,7 @@ namespace ObjectDeliverer.Protocol.Tests
                     FilePath = tempFilePath,
                     CutFirstInterval = true,
                 };
-                reader.SetPacketRule(new PacketRuleFixedLength() { FixedSize = 3 });
+                reader.SetPacketRule(packetRule.Clone());
                 reader.Connected.Subscribe(x => condition0.Signal());
 
                 using (var condition = new CountdownEvent(100))
@@ -79,6 +78,15 @@ namespace ObjectDeliverer.Protocol.Tests
                     await reader.CloseAsync();
                 }
             }
+        }
+
+        [TestMethod()]
+        public async Task InitializeTest()
+        {
+            await TestLogFileAsync(new PacketRuleSizeBody());
+            await TestLogFileAsync(new PacketRuleFixedLength() { FixedSize = 3 });
+            await TestLogFileAsync(new PacketRuleNodivision());
+            await TestLogFileAsync(new PacketRuleTerminate() { Terminate = new byte[] { 0xEE, 0xFF } });
         }
     }
 }

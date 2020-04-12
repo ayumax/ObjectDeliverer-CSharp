@@ -45,6 +45,74 @@ namespace ObjectDeliverer.Protocol
             }
         }
 
+        protected override async Task ReceivedDatas()
+        {
+            if (this.IpClient == null)
+            {
+                this.DispatchDisconnected(this);
+                return;
+            }
+
+            this.Canceler = new CancellationTokenSource();
+
+            while (this.Canceler!.IsCancellationRequested == false)
+            {
+                if (this.IpClient?.Available > 0)
+                {
+                    int wantSize = this.PacketRule.WantSize;
+
+                    if (wantSize > 0)
+                    {
+                        if (this.IpClient.Available < wantSize) continue;
+                    }
+
+                    var receiveSize = wantSize == 0 ? this.IpClient.Available : wantSize;
+
+                    this.ReceiveBuffer.SetBufferSize(receiveSize);
+
+                    if (this.IpClient == null)
+                    {
+                        this.NotifyDisconnect();
+                        return;
+                    }
+
+                    if (await this.IpClient.ReadAsync(this.ReceiveBuffer.MemoryBuffer) <= 0)
+                    {
+                        this.NotifyDisconnect();
+                        return;
+                    }
+
+                    foreach (var receivedMemory in this.PacketRule.MakeReceivedPacket(this.ReceiveBuffer.MemoryBuffer))
+                    {
+                        this.DispatchReceiveData(new DeliverData()
+                        {
+                            Sender = this,
+                            Buffer = receivedMemory,
+                        });
+                    }
+                }
+                else
+                {
+                    if (this.IpClient?.IsEnable == false)
+                    {
+                        this.NotifyDisconnect();
+                        return;
+                    }
+
+                    await Task.Delay(1);
+                }
+            }
+        }
+
+        private void NotifyDisconnect()
+        {
+            if (!this.IsSelfClose)
+            {
+                this.IpClient?.Close();
+                this.DispatchDisconnected(this);
+            }
+        }
+
         private void StartConnect()
         {
             async ValueTask ConnectAsync()
