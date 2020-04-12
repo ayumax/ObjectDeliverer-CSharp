@@ -13,8 +13,7 @@ namespace ObjectDeliverer.Protocol.Tests
     [TestClass()]
     public class ProtocolUdpSocketReceiverTests
     {
-        [TestMethod()]
-        public async Task InitializeTest()
+        private async Task TestUDPAsync(PacketRuleBase packetRule)
         {
             CountdownEvent condition0 = new CountdownEvent(2);
 
@@ -22,14 +21,14 @@ namespace ObjectDeliverer.Protocol.Tests
             {
                 BoundPort = 9013,
             };
-            receiver.SetPacketRule(new PacketRuleFixedLength() { FixedSize = 3 });
+            receiver.SetPacketRule(packetRule.Clone());
 
             var sender = new ProtocolUdpSocketSender()
             {
                 DestinationIpAddress = "127.0.0.1",
                 DestinationPort = 9013,
             };
-            sender.SetPacketRule(new PacketRuleFixedLength() { FixedSize = 3 });
+            sender.SetPacketRule(packetRule.Clone());
 
             using (receiver.Connected.Subscribe(x => condition0.Signal()))
             using (sender.Connected.Subscribe(x => condition0.Signal()))
@@ -43,7 +42,6 @@ namespace ObjectDeliverer.Protocol.Tests
                     Assert.Fail();
                 }
             }
-               
 
             {
                 var expected = new byte[] { 1, 2, 3 };
@@ -68,6 +66,18 @@ namespace ObjectDeliverer.Protocol.Tests
                     }
                 }
             }
+
+            await sender.CloseAsync();
+            await receiver.CloseAsync();
         }
+
+        [TestMethod()]
+        public async Task InitializeTest()
+        {
+            await TestUDPAsync(new PacketRuleSizeBody());
+            await TestUDPAsync(new PacketRuleFixedLength() { FixedSize = 3 });
+            await TestUDPAsync(new PacketRuleNodivision());
+            await TestUDPAsync(new PacketRuleTerminate() { Terminate = new byte[] { 0xEE, 0xFF } });
+        }       
     }
 }
