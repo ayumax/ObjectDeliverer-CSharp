@@ -17,6 +17,15 @@ namespace ObjectDeliverer.DeliveryBox
 
         public override ReadOnlyMemory<byte> MakeSendBuffer(T message) => JsonSerializer.SerializeToUtf8Bytes<T>(message);
 
-        public override T BufferToMessage(ReadOnlyMemory<byte> buffer) => JsonSerializer.Deserialize<T>(buffer.Span);
+        public override T BufferToMessage(ReadOnlyMemory<byte> buffer)
+        {
+            if (buffer.Span[buffer.Length] == 0x00)
+            {
+                // Remove the terminal null
+                return JsonSerializer.Deserialize<T>(buffer.Slice(0, buffer.Length - 1).Span);
+            }
+
+            return JsonSerializer.Deserialize<T>(buffer.Span);
+        }
     }
 }

@@ -7,7 +7,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
     <PackageId>ObjectDeliverer</PackageId>
-    <Version>0.0.5</Version>
+    <Version>0.0.6</Version>
     <Authors>ayumax</Authors>
     <Company>ayumax</Company>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
