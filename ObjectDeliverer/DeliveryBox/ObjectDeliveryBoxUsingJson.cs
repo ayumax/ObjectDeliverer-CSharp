@@ -19,7 +19,7 @@ namespace ObjectDeliverer.DeliveryBox
 
         public override T BufferToMessage(ReadOnlyMemory<byte> buffer)
         {
-            if (buffer.Span[buffer.Length] == 0x00)
+            if (buffer.Span[buffer.Length - 1] == 0x00)
             {
                 // Remove the terminal null
                 return JsonSerializer.Deserialize<T>(buffer.Slice(0, buffer.Length - 1).Span);
