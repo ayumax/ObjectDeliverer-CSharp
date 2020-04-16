@@ -115,7 +115,11 @@ namespace ObjectDeliverer.Protocol
                     }
                 }
 
-                if (this.streamReader.RemainSize() < sizeof(double)) return false;
+                if (this.streamReader.RemainSize() < sizeof(double))
+                {
+                    this.DispatchDisconnected(this);
+                    return false;
+                }
 
                 this.currentLogTime = (long)await this.streamReader.ReadDoubleAsync();
                 if (this.isFirst && this.CutFirstInterval)
@@ -125,11 +129,19 @@ namespace ObjectDeliverer.Protocol
 
                 this.isFirst = false;
 
-                if (this.streamReader.RemainSize() < sizeof(int)) return false;
+                if (this.streamReader.RemainSize() < sizeof(int))
+                {
+                    this.DispatchDisconnected(this);
+                    return false;
+                }
 
                 int bufferSize = await this.streamReader.ReadIntAsync();
 
-                if (this.streamReader.RemainSize() < bufferSize) return false;
+                if (this.streamReader.RemainSize() < bufferSize)
+                {
+                    this.DispatchDisconnected(this);
+                    return false;
+                }
 
                 this.receiveBuffer.SetBufferSize(bufferSize);
 
