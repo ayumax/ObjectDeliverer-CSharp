@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) 2020 ayuma_x. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -6,70 +9,73 @@ namespace ObjectDeliverer.Utils
 {
     public class GrowBuffer
     {
-        private byte[] InnerBuffer;
-
-        public int Length { get; private set; } = 0;
-        public Memory<byte> MemoryBuffer => InnerBuffer.AsMemory(0, Length);
-
-        public ref byte this[int index] => ref InnerBuffer[index];
-
-        public Span<byte> AsSpan(int position, int length) => InnerBuffer.AsSpan(position, length);
-
-        public readonly int PacketSize = 1024;
+        private readonly int packetSize = 1024;
+        private byte[] innerBuffer = new byte[0];
 
         public GrowBuffer(int initialSize = 1024, int packetSize = 1024)
         {
-            InnerBuffer = new byte[initialSize];
-            this.PacketSize = packetSize;
+            this.packetSize = packetSize;
+            this.SetBufferSize(initialSize);
         }
+
+        public int Length { get; private set; } = 0;
+
+        public Memory<byte> MemoryBuffer => this.innerBuffer.AsMemory(0, this.Length);
+
+        public int InnerBufferSize => this.innerBuffer.Length;
+
+        public ref byte this[int index] => ref this.innerBuffer[index];
+
+        public Span<byte> AsSpan(int position, int length) => this.innerBuffer.AsSpan(position, length);
+
+        public ReadOnlyMemory<byte> AsReadOnlyMemory(int position, int length) => this.innerBuffer.AsMemory(position, length);
 
         public bool SetBufferSize(int newSize = 0)
         {
             bool isGrow = false;
 
-            if (InnerBuffer.Length < newSize)
+            if (this.innerBuffer.Length < newSize)
             {
-                var oldBuffer = InnerBuffer;
-                InnerBuffer = new byte[PacketSize * ((newSize / PacketSize) + 1)];
-                MemoryExtention.Copy(AsSpan(0, oldBuffer.Length), oldBuffer);
+                var oldBuffer = this.innerBuffer;
+                this.innerBuffer = new byte[this.packetSize * ((newSize / this.packetSize) + 1)];
+                MemoryExtention.Copy(this.AsSpan(0, oldBuffer.Length), oldBuffer);
 
                 isGrow = true;
             }
 
-            Length = newSize;
+            this.Length = newSize;
 
             return isGrow;
         }
 
         public void Add(ReadOnlySpan<byte> addBuffer)
         {
-            SetBufferSize(Length + addBuffer.Length);
+            this.SetBufferSize(this.Length + addBuffer.Length);
 
-            MemoryExtention.Copy(AsSpan(Length, addBuffer.Length), addBuffer);
+            MemoryExtention.Copy(this.AsSpan(this.Length - addBuffer.Length, addBuffer.Length), addBuffer);
         }
 
         public void CopyFrom(ReadOnlySpan<byte> fromBuffer, int myOffset = 0)
         {
-            var spanBuffer = AsSpan(myOffset, Length - myOffset);
+            var spanBuffer = this.AsSpan(myOffset, Math.Min(fromBuffer.Length, this.Length - myOffset));
 
             MemoryExtention.Copy(spanBuffer, fromBuffer);
         }
 
-        
         public void RemoveRangeFromStart(int start, int length)
         {
-            var moveLength = Length - length;
+            var moveLength = this.Length - length;
             var tempBuffer = new byte[moveLength];
-            var moveSpan = InnerBuffer.AsSpan(start + length, moveLength);
+            var moveSpan = this.innerBuffer.AsSpan(start + length, moveLength);
             MemoryExtention.Copy(tempBuffer, moveSpan);
-            MemoryExtention.Copy(InnerBuffer.AsSpan(start, moveLength), tempBuffer);
+            MemoryExtention.Copy(this.innerBuffer.AsSpan(start, moveLength), tempBuffer);
 
-            Length = moveLength;
+            this.Length = moveLength;
         }
 
         public void Clear()
         {
-            MemoryExtention.Clear(InnerBuffer);
+            MemoryExtention.Clear(this.innerBuffer);
         }
     }
 }

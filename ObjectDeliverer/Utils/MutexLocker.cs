@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) 2020 ayuma_x. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -7,15 +10,16 @@ namespace ObjectDeliverer.Utils
     public class MutexLocker : IDisposable
     {
         private Mutex mutex;
+        private bool disposedValue = false;
 
         public MutexLocker(string mutexName)
         {
-            mutex = new Mutex(false, mutexName);
+            this.mutex = new Mutex(false, mutexName);
         }
 
         public void Lock(Action action)
         {
-            mutex.WaitOne();
+            this.mutex.WaitOne();
 
             try
             {
@@ -23,13 +27,13 @@ namespace ObjectDeliverer.Utils
             }
             finally
             {
-                mutex.ReleaseMutex();
+                this.mutex.ReleaseMutex();
             }
         }
 
         public async ValueTask LockAsync(Func<ValueTask> action)
         {
-            mutex.WaitOne();
+            this.mutex.WaitOne();
 
             try
             {
@@ -37,31 +41,26 @@ namespace ObjectDeliverer.Utils
             }
             finally
             {
-                mutex.ReleaseMutex();
+                this.mutex.ReleaseMutex();
             }
         }
 
-        #region IDisposable Support
-        private bool disposedValue = false; // 重複する呼び出しを検出するには
+        public void Dispose()
+        {
+            this.Dispose(true);
+        }
 
         protected virtual void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (!this.disposedValue)
             {
                 if (disposing)
                 {
-                    mutex?.Dispose();
+                    this.mutex?.Dispose();
                 }
 
-                disposedValue = true;
+                this.disposedValue = true;
             }
         }
-
-     
-        public void Dispose()
-        {
-            Dispose(true);
-        }
-        #endregion
     }
 }

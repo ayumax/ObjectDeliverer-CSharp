@@ -8,14 +8,8 @@ using System.Text;
 
 namespace ObjectDeliverer
 {
-    public class DeliverData
+    public class DeliverData<T> : DeliverData
     {
-        public DeliverData()
-        {
-        }
-
-        public ObjectDelivererProtocol Sender { get; set; } = null!;
-
-        public ReadOnlyMemory<byte> Buffer { get; set; }
+        public T Message { get; set; } = default(T)!;
     }
 }

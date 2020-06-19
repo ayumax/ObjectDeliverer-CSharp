@@ -1,50 +1,57 @@
+// Copyright (c) 2020 ayuma_x. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using ObjectDeliverer.Utils;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using ObjectDeliverer.Utils;
-
 
 namespace ObjectDeliverer.PacketRule
 {
     public class PacketRuleTerminate : PacketRuleBase
     {
+        private readonly GrowBuffer bufferForSend = new GrowBuffer();
+        private readonly GrowBuffer receiveTempBuffer = new GrowBuffer();
+        private readonly GrowBuffer bufferForReceive = new GrowBuffer();
+
         public byte[] Terminate { get; set; } = new byte[0];
-        private GrowBuffer BufferForSend = new GrowBuffer();
-        private GrowBuffer ReceiveTempBuffer = new GrowBuffer();
-        private GrowBuffer BufferForReceive = new GrowBuffer();
+
+        public override int WantSize => 0;
 
         public override void Initialize()
         {
-            BufferForSend.SetBufferSize(0);
-            ReceiveTempBuffer.SetBufferSize(0);
-            BufferForReceive.SetBufferSize(0);
+            this.bufferForSend.SetBufferSize(0);
+            this.receiveTempBuffer.SetBufferSize(0);
+            this.bufferForReceive.SetBufferSize(0);
         }
 
         public override ReadOnlyMemory<byte> MakeSendPacket(ReadOnlyMemory<byte> bodyBuffer)
         {
-            var SendSize = bodyBuffer.Length + Terminate.Length;
-            BufferForSend.SetBufferSize(SendSize);
+            var sendSize = bodyBuffer.Length + this.Terminate.Length;
+            this.bufferForSend.SetBufferSize(sendSize);
 
-            BufferForSend.CopyFrom(bodyBuffer.Span, 0);
-            BufferForSend.CopyFrom(Terminate, bodyBuffer.Length);
+            this.bufferForSend.CopyFrom(bodyBuffer.Span, 0);
+            this.bufferForSend.CopyFrom(this.Terminate, bodyBuffer.Length);
 
-            return BufferForSend.MemoryBuffer;
+            return this.bufferForSend.MemoryBuffer;
         }
 
-        public override IEnumerable<ReadOnlyMemory<byte>> NotifyReceiveData(ReadOnlyMemory<byte> dataBuffer)
+        public override IEnumerable<ReadOnlyMemory<byte>> MakeReceivedPacket(ReadOnlyMemory<byte> dataBuffer)
         {
-            ReceiveTempBuffer.Add(dataBuffer.Span);
+            if (this.WantSize > 0 && dataBuffer.Length != this.WantSize) yield break;
+
+            this.receiveTempBuffer.Add(dataBuffer.Span);
 
             int findIndex = -1;
 
             while (true)
             {
-                for (int i = 0; i <= ReceiveTempBuffer.Length - Terminate.Length; ++i)
+                for (int i = 0; i <= this.receiveTempBuffer.Length - this.Terminate.Length; ++i)
                 {
                     bool notEqual = false;
-                    for (int j = 0; j <= Terminate.Length; ++j)
+                    for (int j = 0; j < this.Terminate.Length; ++j)
                     {
-                        if (ReceiveTempBuffer[i + j] != Terminate[j])
+                        if (this.receiveTempBuffer[i + j] != this.Terminate[j])
                         {
                             notEqual = true;
                             break;
@@ -63,19 +70,20 @@ namespace ObjectDeliverer.PacketRule
                     yield break;
                 }
 
-                BufferForReceive.SetBufferSize(findIndex);
-                BufferForReceive.CopyFrom(ReceiveTempBuffer.AsSpan(0, findIndex));
+                this.bufferForReceive.SetBufferSize(findIndex);
+                this.bufferForReceive.CopyFrom(this.receiveTempBuffer.AsSpan(0, findIndex));
 
-                yield return BufferForReceive.MemoryBuffer;
+                yield return this.bufferForReceive.MemoryBuffer;
 
-                ReceiveTempBuffer.RemoveRangeFromStart(0, findIndex + Terminate.Length);
+                this.receiveTempBuffer.RemoveRangeFromStart(0, findIndex + this.Terminate.Length);
 
                 findIndex = -1;
             }
         }
 
-        public override int WantSize => 0;
-
-        public override PacketRuleBase Clone() => PacketRuleFactory.CreatePacketRuleTerminate(Terminate);
+        public override PacketRuleBase Clone() => new PacketRuleTerminate()
+        {
+            Terminate = this.Terminate,
+        };
     }
 }

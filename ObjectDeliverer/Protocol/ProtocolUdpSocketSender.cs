@@ -1,32 +1,28 @@
+// Copyright (c) 2020 ayuma_x. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using ObjectDeliverer.Protocol.IP;
+using ObjectDeliverer.Utils;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using ObjectDeliverer.Protocol.IP;
-using ObjectDeliverer.Utils;
 
 namespace ObjectDeliverer.Protocol
 {
     public class ProtocolUdpSocketSender : ProtocolIPSocket
     {
         public string DestinationIpAddress { get; set; } = "127.0.0.1";
+
         public int DestinationPort { get; set; } = 0;
 
-        public void Initialize(string ipAddress, int port)
+        public override async ValueTask StartAsync()
         {
-            DestinationIpAddress = ipAddress;
-            DestinationPort = port;
-        }
+            this.IpClient = new UDPProtocolHelper(this.SendBufferSize);
 
-        public override ValueTask StartAsync()
-        {
-            ipClient = new UDPProtocolHelper();
+            await this.IpClient.ConnectAsync(this.DestinationIpAddress, this.DestinationPort);
 
-            ipClient.ConnectAsync(DestinationIpAddress, DestinationPort);
-
-            DispatchConnected(this);
-
-            return new ValueTask();
+            this.DispatchConnected(this);
         }
     }
 }

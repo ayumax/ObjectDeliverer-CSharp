@@ -1,36 +1,44 @@
-﻿using System;
+﻿// Copyright (c) 2020 ayuma_x. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace ObjectDeliverer.Utils
 {
-    public class PollingTask
+    public class PollingTask : IAsyncDisposable
     {
-        private Task? pollingTask = null;
+        private ValueTask pollingTask = default(ValueTask);
 
         private CancellationTokenSource? canceler;
 
         public PollingTask(Func<ValueTask<bool>> action)
         {
-            canceler = new CancellationTokenSource();
+            this.canceler = new CancellationTokenSource();
 
-            pollingTask = Task.Run(async () =>
-            {
-                while(canceler?.IsCancellationRequested == false)
-                {
-                    if (await action.Invoke() == false)
-                    {
-                        break;
-                    }
-                }
-            });
+            this.pollingTask = this.RunAsync(action);
         }
 
-        public async ValueTask Stop()
+        public ValueTask DisposeAsync()
         {
-            if (pollingTask == null) return;
-            canceler?.Cancel();
-            await pollingTask;
+            if (this.pollingTask == null) return default(ValueTask);
+
+            this.canceler?.Cancel();
+            return this.pollingTask;
+        }
+
+        private async ValueTask RunAsync(Func<ValueTask<bool>> action)
+        {
+            while (this.canceler?.IsCancellationRequested == false)
+            {
+                if (await action.Invoke() == false)
+                {
+                    break;
+                }
+
+                await Task.Delay(1);
+            }
         }
     }
 }

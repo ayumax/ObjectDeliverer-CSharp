@@ -1,3 +1,6 @@
+// Copyright (c) 2020 ayuma_x. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using ObjectDeliverer.Protocol;
 using System;
 using System.Collections.Generic;
@@ -6,26 +9,10 @@ using System.Threading.Tasks;
 
 namespace ObjectDeliverer.DeliveryBox
 {
-    public class Utf8StringDeliveryBox : DeliveryBoxBase
+    public class Utf8StringDeliveryBox : DeliveryBoxBase<string>
     {
-        public delegate void CNUtf8StringDeliveryBoxReceived(string receivedString, ObjectDelivererProtocol fromObject);
-        public event CNUtf8StringDeliveryBoxReceived? Received;
+        public override ReadOnlyMemory<byte> MakeSendBuffer(string message) => UTF8Encoding.UTF8.GetBytes(message);
 
-        public async ValueTask Send(string message)
-        {
-            await SendTo(message, null);
-        }
-
-        public ValueTask SendTo(string message, ObjectDelivererProtocol? destination)
-        {
-            if (objectDeliverer == null) return new ValueTask();
-
-            return objectDeliverer.SendToAsync(UTF8Encoding.UTF8.GetBytes(message), destination!);
-        }
-
-        public override void NotifyReceiveBuffer(ObjectDelivererProtocol fromObject, ReadOnlyMemory<byte> receivedBuffer)
-        {
-            Received?.Invoke(UTF8Encoding.UTF8.GetString(receivedBuffer.Span), fromObject);
-        }
+        public override string BufferToMessage(ReadOnlyMemory<byte> buffer) => UTF8Encoding.UTF8.GetString(buffer.Span);
     }
 }

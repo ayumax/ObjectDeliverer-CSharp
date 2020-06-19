@@ -1,74 +1,79 @@
+// Copyright (c) 2020 ayuma_x. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using ObjectDeliverer.PacketRule;
 using System;
 using System.Collections.Generic;
+using System.Reactive.Subjects;
 using System.Threading.Tasks;
-using ObjectDeliverer.PacketRule;
 
 namespace ObjectDeliverer.Protocol
 {
-    public abstract class ObjectDelivererProtocol : IDisposable, IProtocol
+    public abstract class ObjectDelivererProtocol : IDisposable
     {
-        public delegate void ObjectDelivererProtocolConnected(ObjectDelivererProtocol delivererProtocol);
-        public event ObjectDelivererProtocolConnected? Connected;
-        public delegate void ObjectDelivererProtocolDisconnected(ObjectDelivererProtocol delivererProtocol);
-        public event ObjectDelivererProtocolDisconnected? Disconnected;
-        public delegate void ObjectDelivererProtocolReceiveData(ObjectDelivererProtocol delivererProtocol, ReadOnlyMemory<byte> receivedBuffer);
-        public event ObjectDelivererProtocolReceiveData? ReceiveData;
-
-        protected PacketRuleBase PacketRule = PacketRuleFactory.CreatePacketRuleNodivision();
+        private bool disposedValue = false;
+        private Subject<ConnectedData> connected = new Subject<ConnectedData>();
+        private Subject<ConnectedData> disconnected = new Subject<ConnectedData>();
+        private Subject<DeliverData> receiveData = new Subject<DeliverData>();
 
         public ObjectDelivererProtocol()
         {
         }
 
+        public IObservable<ConnectedData> Connected => this.connected;
+
+        public IObservable<ConnectedData> Disconnected => this.disconnected;
+
+        public IObservable<DeliverData> ReceiveData => this.receiveData;
+
+        protected PacketRuleBase PacketRule { get; set; } = new PacketRuleNodivision();
+
         public abstract ValueTask StartAsync();
+
         public abstract ValueTask CloseAsync();
 
         public abstract ValueTask SendAsync(ReadOnlyMemory<byte> dataBuffer);
 
+        public void SetPacketRule(PacketRuleBase packetRule)
+        {
+            this.PacketRule = packetRule;
+            packetRule.Initialize();
+        }
+
+        public void Dispose()
+        {
+            this.connected.Dispose();
+            this.disconnected.Dispose();
+            this.receiveData.Dispose();
+            this.Dispose(true);
+        }
+
         protected virtual void DispatchConnected(ObjectDelivererProtocol delivererProtocol)
         {
-            Connected?.Invoke(delivererProtocol);
+            this.connected.OnNext(new ConnectedData() { Target = delivererProtocol });
         }
 
         protected virtual void DispatchDisconnected(ObjectDelivererProtocol delivererProtocol)
         {
-            Disconnected?.Invoke(delivererProtocol);
+            this.disconnected.OnNext(new ConnectedData() { Target = delivererProtocol });
         }
 
-        protected virtual void DispatchReceiveData(ObjectDelivererProtocol delivererProtocol, ReadOnlyMemory<byte> receivedBuffer)
+        protected virtual void DispatchReceiveData(DeliverData deliverData)
         {
-            ReceiveData?.Invoke(delivererProtocol, receivedBuffer);
+            this.receiveData.OnNext(deliverData);
         }
-
-        public void SetPacketRule(PacketRuleBase PacketRule)
-        {
-            this.PacketRule = PacketRule;
-            PacketRule.Initialize();
-        }
-
-
-        #region IDisposable Support
-        private bool disposedValue = false; 
 
         protected virtual async void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (!this.disposedValue)
             {
                 if (disposing)
                 {
-                    await CloseAsync();
+                    await this.CloseAsync();
                 }
 
-                disposedValue = true;
+                this.disposedValue = true;
             }
         }
-
-
-        public void Dispose()
-        {
-            Dispose(true);
-        }
-        #endregion
-
     }
 }

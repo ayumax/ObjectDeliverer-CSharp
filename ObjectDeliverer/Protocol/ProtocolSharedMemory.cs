@@ -1,19 +1,19 @@
+// Copyright (c) 2020 ayuma_x. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using ObjectDeliverer.Protocol.IP;
+using ObjectDeliverer.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO.MemoryMappedFiles;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using ObjectDeliverer.Protocol.IP;
-using ObjectDeliverer.Utils;
 
 namespace ObjectDeliverer.Protocol
 {
     public class ProtocolSharedMemory : ObjectDelivererProtocol
     {
-        private string sharedMemoryName = "";
-        private int sharedMemorySize = 1024;
-
         private MutexLocker? sharedMemoryMutex;
 
         private int sharedMemoryTotalSize = 0;
@@ -22,141 +22,138 @@ namespace ObjectDeliverer.Protocol
         private MemoryMappedFile? sharedMenmory;
         private MemoryMappedViewStream? sharedMemoryStream;
 
-        private Memory<byte> receiveBuffer = new Memory<byte>();
+        private Memory<byte> receiveBuffer = default(Memory<byte>);
         private PollingTask? pollinger;
 
-        public void Initialize(string sharedMemoryName = "SharedMemory", int sharedMemorySize = 1024)
-        {
-            this.sharedMemoryName = sharedMemoryName;
-            this.sharedMemorySize = sharedMemorySize;
-        }
+        public string SharedMemoryName { get; set; } = "SharedMemory";
+
+        public int SharedMemorySize { get; set; } = 1024;
 
         public override async ValueTask StartAsync()
         {
-            string mutexName = sharedMemoryName + "MUTEX";
-            sharedMemoryTotalSize = sharedMemorySize + sizeof(byte) + sizeof(int);
+            string mutexName = this.SharedMemoryName + "MUTEX";
+            this.sharedMemoryTotalSize = this.SharedMemorySize + sizeof(byte) + sizeof(int);
 
-            sharedMemoryMutex = new MutexLocker(mutexName);
+            this.sharedMemoryMutex = new MutexLocker(mutexName);
 
-            if (sharedMemoryMutex == null) return;
+            if (this.sharedMemoryMutex == null) return;
 
-            sharedMenmory = MemoryMappedFile.CreateOrOpen(sharedMemoryName, sharedMemoryTotalSize, MemoryMappedFileAccess.ReadWrite);
-            sharedMemoryStream = sharedMenmory.CreateViewStream();
+            this.sharedMenmory = MemoryMappedFile.CreateOrOpen(this.SharedMemoryName, this.sharedMemoryTotalSize, MemoryMappedFileAccess.ReadWrite);
+            this.sharedMemoryStream = this.sharedMenmory.CreateViewStream();
 
-            await sharedMemoryMutex.LockAsync(() => sharedMemoryStream.WriteAsync(new byte[sharedMemoryTotalSize]));
+            await this.sharedMemoryMutex.LockAsync(() => this.sharedMemoryStream.WriteAsync(new byte[this.sharedMemoryTotalSize]));
 
+            this.nowCounter = 0;
+            this.receiveBuffer = new byte[this.SharedMemorySize];
 
-            nowCounter = 0;
-            receiveBuffer = new byte[sharedMemorySize];
+            this.pollinger = new PollingTask(this.OnReceive);
 
-            pollinger = new PollingTask(OnReceive);
-
-            DispatchConnected(this);
+            this.DispatchConnected(this);
         }
 
         public override async ValueTask CloseAsync()
         {
-            sharedMemoryMutex?.LockAsync(async () =>
+            this.sharedMemoryMutex?.LockAsync(async () =>
                 {
-                    if (pollinger == null) return;
-                    await pollinger.Stop();
+                    if (this.pollinger == null) return;
+                    await this.pollinger.DisposeAsync();
                 });
 
-            sharedMemoryMutex?.Dispose();
-            sharedMemoryMutex = null;
+            this.sharedMemoryMutex?.Dispose();
+            this.sharedMemoryMutex = null;
 
-            if (sharedMemoryStream != null)
+            if (this.sharedMemoryStream != null)
             {
-                await sharedMemoryStream.DisposeAsync();
-                sharedMemoryStream = null;
+                await this.sharedMemoryStream.DisposeAsync();
+                this.sharedMemoryStream = null;
             }
 
-            sharedMenmory?.Dispose();
-            sharedMenmory = null;
-        }
-
-        private async ValueTask<bool> OnReceive()
-        {
-            if (sharedMemoryMutex == null || sharedMemoryStream == null) return false;
-
-            int Size = 0;
-
-            await sharedMemoryMutex.LockAsync(async () =>
-            {
-                sharedMemoryStream.Position = 0;
-
-                byte counter = (byte)sharedMemoryStream.ReadByte();
-                if (counter == nowCounter) return;
-
-                nowCounter = counter;
-
-                byte[] sizeBuffer = new byte[sizeof(int)];
-
-                sharedMemoryStream.Read(sizeBuffer);
-
-                Size = BitConverter.ToInt32(sizeBuffer);
-
-                if (Size == 0 || Size != receiveBuffer.Length) return;
-
-                await sharedMemoryStream.ReadAsync(receiveBuffer);
-            });
-
-            if (Size == 0) return true;
-
-            int wantSize = PacketRule.WantSize;
-
-            if (wantSize > 0)
-            {
-                if (Size < wantSize) return true;
-            }
-
-            int Offset = 0;
-            while (Size > 0)
-            {
-                wantSize = PacketRule.WantSize;
-                int receiveSize = wantSize == 0 ? Size : wantSize;
-
-                foreach (var receivedMemory in PacketRule.NotifyReceiveData(receiveBuffer.Slice(Offset, receiveSize)))
-                {
-                    DispatchReceiveData(this, receivedMemory);
-                }
-
-                Offset += receiveSize;
-                Size -= receiveSize;
-            }
-
-            return true;
+            this.sharedMenmory?.Dispose();
+            this.sharedMenmory = null;
         }
 
         public override ValueTask SendAsync(ReadOnlyMemory<byte> dataBuffer)
         {
-            var sendBuffer = PacketRule.MakeSendPacket(dataBuffer);
+            var sendBuffer = this.PacketRule.MakeSendPacket(dataBuffer);
 
-            if (sendBuffer.Length > sharedMemorySize) return new ValueTask();
+            if (sendBuffer.Length > this.SharedMemorySize) return default(ValueTask);
 
-            if (sharedMemoryMutex == null || sharedMemoryStream == null) return new ValueTask();
+            if (this.sharedMemoryMutex == null || this.sharedMemoryStream == null) return default(ValueTask);
 
             int writeSize = sendBuffer.Length;
 
-            return sharedMemoryMutex.LockAsync(() =>
+            return this.sharedMemoryMutex.LockAsync(() =>
             {
-                nowCounter++;
-                if (nowCounter == 0)
+                this.nowCounter++;
+                if (this.nowCounter == 0)
                 {
-                    nowCounter = 1;
+                    this.nowCounter = 1;
                 }
 
-                sharedMemoryStream.Position = 0;
-                sharedMemoryStream.WriteByte(nowCounter);
+                this.sharedMemoryStream.Position = 0;
+                this.sharedMemoryStream.WriteByte(this.nowCounter);
 
-                sharedMemoryStream.Write(BitConverter.GetBytes(sendBuffer.Length));
+                this.sharedMemoryStream.Write(BitConverter.GetBytes(sendBuffer.Length));
 
-                return sharedMemoryStream.WriteAsync(sendBuffer);
+                return this.sharedMemoryStream.WriteAsync(sendBuffer);
             });
         }
 
+        private async ValueTask<bool> OnReceive()
+        {
+            if (this.sharedMemoryMutex == null || this.sharedMemoryStream == null) return false;
+
+            int size = 0;
+
+            await this.sharedMemoryMutex.LockAsync(async () =>
+            {
+                this.sharedMemoryStream.Position = 0;
+
+                byte counter = (byte)this.sharedMemoryStream.ReadByte();
+                if (counter == this.nowCounter) return;
+
+                this.nowCounter = counter;
+
+                byte[] sizeBuffer = new byte[sizeof(int)];
+
+                this.sharedMemoryStream.Read(sizeBuffer);
+
+                size = BitConverter.ToInt32(sizeBuffer);
+
+                if (size == 0 || size > this.receiveBuffer.Length) return;
+
+                await this.sharedMemoryStream.ReadAsync(this.receiveBuffer);
+            });
+
+            if (size == 0) return true;
+
+            int wantSize = this.PacketRule.WantSize;
+
+            if (wantSize > 0)
+            {
+                if (size < wantSize) return true;
+            }
+
+            int offset = 0;
+            while (size > 0)
+            {
+                wantSize = this.PacketRule.WantSize;
+                int receiveSize = wantSize == 0 ? size : wantSize;
+
+                foreach (var receivedMemory in this.PacketRule.MakeReceivedPacket(this.receiveBuffer.Slice(offset, receiveSize)))
+                {
+                    this.DispatchReceiveData(new DeliverData()
+                    {
+                        Sender = this,
+                        Buffer = receivedMemory,
+                    });
+                }
+
+                offset += receiveSize;
+                size -= receiveSize;
+            }
+
+            return true;
+        }
     }
-
 }
-
-

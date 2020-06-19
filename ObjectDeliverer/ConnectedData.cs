@@ -8,14 +8,12 @@ using System.Text;
 
 namespace ObjectDeliverer
 {
-    public class DeliverData
+    public class ConnectedData
     {
-        public DeliverData()
+        public ConnectedData()
         {
         }
 
-        public ObjectDelivererProtocol Sender { get; set; } = null!;
-
-        public ReadOnlyMemory<byte> Buffer { get; set; }
+        public ObjectDelivererProtocol Target { get; set; } = null!;
     }
 }

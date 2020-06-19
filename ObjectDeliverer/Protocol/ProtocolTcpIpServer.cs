@@ -1,75 +1,106 @@
-// Copyright 2019 ayumax. All Rights Reserved.
+// Copyright (c) 2020 ayuma_x. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using ObjectDeliverer.Protocol.IP;
+using ObjectDeliverer.Utils;
 using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using ObjectDeliverer.Protocol.IP;
-using ObjectDeliverer.Utils;
 using ValueTaskSupplement;
 
 namespace ObjectDeliverer.Protocol
 {
     public class ProtocolTcpIpServer : ObjectDelivererProtocol
     {
-        public int ListenPort { get; set; }
+        private readonly List<ProtocolIPSocket> connectedSockets = new List<ProtocolIPSocket>();
 
         private TcpListener? tcpListener = null;
-
-        private List<ProtocolIPSocket> ConnectedSockets = new List<ProtocolIPSocket>();
-
-        private CancellationTokenSource? Canceler;
         private PollingTask? waitClientsTask;
 
-        public void Initialize(int Port)
+        public int ReceiveBufferSize { get; set; } = 8192;
+
+        public int SendBufferSize { get; set; } = 8192;
+
+        public int ListenPort { get; set; }
+
+        public override ValueTask StartAsync()
         {
-            this.ListenPort = Port;
+            this.tcpListener = new TcpListener(IPAddress.Any, this.ListenPort);
+            this.tcpListener.Start();
+
+            this.waitClientsTask = new PollingTask(this.OnAcceptTcpClientAsync);
+
+            return default(ValueTask);
         }
 
-        public override async ValueTask StartAsync()
+        public override ValueTask CloseAsync()
         {
-            await CloseAsync();
+            this.tcpListener?.Stop();
+            this.tcpListener = null;
 
-            Canceler = new CancellationTokenSource();
+            List<ValueTask> closeTasks = new List<ValueTask>();
 
-            tcpListener = new TcpListener(IPAddress.Any, ListenPort);
-            tcpListener.Start();
+            if (this.waitClientsTask != null)
+            {
+                closeTasks.Add(this.waitClientsTask.DisposeAsync());
+            }
 
-            waitClientsTask = new PollingTask(onAcceptTcpClientAsync);
+            foreach (var clientSocket in this.connectedSockets)
+            {
+                clientSocket.Dispose();
+                closeTasks.Add(clientSocket.CloseAsync());
+            }
+
+            this.connectedSockets.Clear();
+
+            return ValueTaskEx.WhenAll(closeTasks);
         }
 
-        private async ValueTask<bool> onAcceptTcpClientAsync()
+        public override ValueTask SendAsync(ReadOnlyMemory<byte> dataBuffer)
         {
-            if (tcpListener == null) return false;
+            List<ValueTask> sendTasks = new List<ValueTask>();
+
+            foreach (var clientSocket in this.connectedSockets)
+            {
+                sendTasks.Add(clientSocket.SendAsync(dataBuffer));
+            }
+
+            return ValueTaskEx.WhenAll(sendTasks);
+        }
+
+        private async ValueTask<bool> OnAcceptTcpClientAsync()
+        {
+            if (this.tcpListener == null) return false;
 
             try
             {
-                var _client = await tcpListener.AcceptTcpClientAsync();
-                var client = new TCPProtocolHelper(_client);
+                var acceptedTcpClient = await this.tcpListener.AcceptTcpClientAsync();
+                var acceptedTcpClientWrapper = new TCPProtocolHelper(acceptedTcpClient, this.ReceiveBufferSize, this.SendBufferSize);
 
-                var clientSocket = new ProtocolIPSocket();
-                clientSocket.Disconnected += ClientSocket_Disconnected;
-                clientSocket.ReceiveData += ClientSocket_ReceiveData;
-                clientSocket.SetPacketRule(PacketRule.Clone());
+                var clientSocket = new ProtocolTcpIpClient();
+                clientSocket.Disconnected.Subscribe(x => this.ClientSocket_Disconnected(x.Target));
+                clientSocket.ReceiveData.Subscribe(x => this.DispatchReceiveData(x));
+                clientSocket.SetPacketRule(this.PacketRule.Clone());
 
-                ConnectedSockets.Add(clientSocket);
+                this.connectedSockets.Add(clientSocket);
 
-                DispatchConnected(clientSocket);
+                this.DispatchConnected(clientSocket);
 
-                clientSocket.StartPollingForReceive(client);
+                clientSocket.StartPollingForReceive(acceptedTcpClientWrapper);
             }
             catch (SocketException)
             {
                 return false;
             }
+            catch (ObjectDisposedException)
+            {
+                return false;
+            }
 
             return true;
-        }
-
-        private void ClientSocket_ReceiveData(ObjectDelivererProtocol delivererProtocol, ReadOnlyMemory<byte> receivedBuffer)
-        {
-            DispatchReceiveData(delivererProtocol, receivedBuffer);
         }
 
         private void ClientSocket_Disconnected(ObjectDelivererProtocol delivererProtocol)
@@ -78,50 +109,16 @@ namespace ObjectDeliverer.Protocol
 
             if (delivererProtocol is ProtocolIPSocket protocolTcpIp)
             {
-                int foundIndex = ConnectedSockets.IndexOf(protocolTcpIp);
+                int foundIndex = this.connectedSockets.IndexOf(protocolTcpIp);
                 if (foundIndex >= 0)
                 {
-                    protocolTcpIp.Disconnected -= ClientSocket_Disconnected;
-                    protocolTcpIp.ReceiveData -= ClientSocket_ReceiveData;
+                    protocolTcpIp.Dispose();
 
-                    ConnectedSockets.RemoveAt(foundIndex);
+                    this.connectedSockets.RemoveAt(foundIndex);
 
-                    DispatchDisconnected(protocolTcpIp);
+                    this.DispatchDisconnected(protocolTcpIp);
                 }
             }
         }
-
-        public override async ValueTask CloseAsync()
-        {
-            Canceler?.Cancel();
-            tcpListener?.Stop();
-
-            List<Task> closeTasks = new List<Task>();
-
-            foreach (var clientSocket in ConnectedSockets)
-            {
-                clientSocket.Disconnected -= ClientSocket_Disconnected;
-                clientSocket.ReceiveData -= ClientSocket_ReceiveData;
-                closeTasks.Add(clientSocket.CloseAsync().AsTask());
-            }
-
-            ConnectedSockets.Clear();
-
-            await Task.WhenAll(closeTasks);
-        }
-
-        public override ValueTask SendAsync(ReadOnlyMemory<byte> dataBuffer)
-        {
-            List<ValueTask> sendTasks = new List<ValueTask>();
-
-            foreach(var clientSocket in ConnectedSockets)
-            {
-                sendTasks.Add(clientSocket.SendAsync(dataBuffer));
-            }
-
-            return ValueTaskEx.WhenAll(sendTasks);
-        }
     }
 }
-
-

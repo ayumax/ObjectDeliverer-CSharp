@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Copyright (c) 2020 ayuma_x. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -6,36 +10,38 @@ namespace ObjectDeliverer.Protocol.IP
 {
     public abstract class IPProtocolHelper : IDisposable
     {
-        public abstract ValueTask WriteAsync(ReadOnlyMemory<byte> buffer);
-        public abstract ValueTask<int> ReadAsync(Memory<byte> buffer);
+        private bool disposedValue = false;
 
         public abstract int Available { get; }
+
         public abstract bool IsEnable { get; }
 
+        public abstract ValueTask WriteAsync(ReadOnlyMemory<byte> buffer);
+
+        public abstract ValueTask<int> ReadAsync(Memory<byte> buffer);
+
+        public abstract ValueTask<(byte[] Buffer, EndPoint? RemoteEndPoint)> ReceiveAsync();
+
         public abstract Task ConnectAsync(string host, int port);
+
         public abstract void Close();
-
-
-        #region IDisposable Support
-        private bool disposedValue = false; // 重複する呼び出しを検出するには
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    Close();
-                }
-
-                disposedValue = true;
-            }
-        }
 
         public void Dispose()
         {
-            Dispose(true);
+            this.Dispose(true);
         }
-        #endregion
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!this.disposedValue)
+            {
+                if (disposing)
+                {
+                    this.Close();
+                }
+
+                this.disposedValue = true;
+            }
+        }
     }
 }

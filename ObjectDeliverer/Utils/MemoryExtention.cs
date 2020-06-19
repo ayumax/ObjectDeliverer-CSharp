@@ -1,9 +1,13 @@
-﻿using System;
+﻿// Copyright (c) 2020 ayuma_x. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
+
 namespace ObjectDeliverer.Utils
 {
     public static class MemoryExtention
     {
-        public unsafe static void Copy(Span<byte> toBuffer, ReadOnlySpan<byte> fromBuffer)
+        public static unsafe void Copy(Span<byte> toBuffer, ReadOnlySpan<byte> fromBuffer)
         {
             if (toBuffer.Length != fromBuffer.Length) return;
 
@@ -19,12 +23,14 @@ namespace ObjectDeliverer.Utils
                     pTo += 8;
                     pFrom += 8;
                 }
+
                 if (pTo + 3 < last)
                 {
                     *(uint*)pTo = *(uint*)pFrom;
                     pTo += 4;
                     pFrom += 4;
                 }
+
                 while (pTo < last)
                 {
                     *pTo = *pFrom;
@@ -34,7 +40,7 @@ namespace ObjectDeliverer.Utils
             }
         }
 
-        public unsafe static void Clear(Span<byte> targetBuffer)
+        public static unsafe void Clear(Span<byte> targetBuffer)
         {
             fixed (byte* pin = targetBuffer)
             {
@@ -45,11 +51,13 @@ namespace ObjectDeliverer.Utils
                     *(ulong*)p = 0;
                     p += 8;
                 }
+
                 if (p + 3 < last)
                 {
                     *(uint*)p = 0;
                     p += 4;
                 }
+
                 while (p < last)
                 {
                     *p = 0;

@@ -1,128 +1,72 @@
+// Copyright (c) 2020 ayuma_x. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using ObjectDeliverer.Protocol.IP;
+using ObjectDeliverer.Utils;
 using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using ObjectDeliverer.Protocol.IP;
-using ObjectDeliverer.Utils;
 
 namespace ObjectDeliverer.Protocol
 {
     public class ProtocolIPSocket : ObjectDelivererProtocol
     {
-        protected IPProtocolHelper? ipClient = null;
-        protected bool IsSelfClose = false;
-
         private Task? receiveTask = null;
 
-        protected GrowBuffer ReceiveBuffer { get; private set; } = new GrowBuffer();
+        public int ReceiveBufferSize { get; set; } = 8192;
 
-        private CancellationTokenSource? Canceler;
+        public int SendBufferSize { get; set; } = 8192;
 
-        public override async ValueTask StartAsync()
+        protected GrowBuffer ReceiveBuffer { get; set; } = new GrowBuffer();
+
+        protected CancellationTokenSource? Canceler { get; set; }
+
+        protected IPProtocolHelper? IpClient { get; set; } = null;
+
+        protected bool IsSelfClose { get; set; } = false;
+
+        public override ValueTask StartAsync()
         {
-            await CloseAsync();
-
-            ReceiveBuffer.SetBufferSize(1024);
+            this.ReceiveBuffer.SetBufferSize(1024);
+            return default(ValueTask);
         }
 
         public override ValueTask CloseAsync()
         {
-            if (ipClient == null) return new ValueTask();
+            if (this.IpClient == null) return default(ValueTask);
 
-            IsSelfClose = true;
+            this.IsSelfClose = true;
 
-            ipClient.Close();
+            this.IpClient.Close();
 
-            Canceler?.Cancel();
+            this.Canceler?.Cancel();
 
-            ipClient = null;
-            Canceler = null;
+            this.IpClient = null;
+            this.Canceler = null;
 
-            return new ValueTask();
+            return default(ValueTask);
         }
 
         public override ValueTask SendAsync(ReadOnlyMemory<byte> dataBuffer)
         {
-            if (ipClient == null) return new ValueTask();
+            if (this.IpClient == null) return default(ValueTask);
 
-            var sendBuffer = PacketRule.MakeSendPacket(dataBuffer);
+            var sendBuffer = this.PacketRule.MakeSendPacket(dataBuffer);
 
-            return ipClient.WriteAsync(sendBuffer);
+            return this.IpClient.WriteAsync(sendBuffer);
         }
-
 
         public void StartPollingForReceive(IPProtocolHelper connectionSocket)
         {
-            ipClient = connectionSocket;
-            
-            ReceiveBuffer.SetBufferSize(1024);
+            this.IpClient = connectionSocket;
 
-            receiveTask = ReceivedDatas();
+            this.ReceiveBuffer.SetBufferSize(1024);
+
+            this.receiveTask = this.ReceivedDatas();
         }
 
-        private async Task ReceivedDatas()
-        {
-            if (ipClient == null)
-            {
-                DispatchDisconnected(this);
-                return;
-            }
-
-            while(Canceler!.IsCancellationRequested == false)
-            {
-                if (ipClient.Available > 0)
-                {
-                    int wantSize = PacketRule.WantSize;
-
-                    if (wantSize > 0)
-                    {
-                        if (ipClient.Available < wantSize) continue;
-                    }
-
-                    var receiveSize = wantSize == 0 ? ipClient.Available : wantSize;
-
-                    ReceiveBuffer.SetBufferSize(receiveSize);
-
-                    if (ipClient == null)
-                    {
-                        NotifyDisconnect();
-                        return;
-                    }
-
-                    if (ipClient.IsEnable == false)
-                    {
-                        NotifyDisconnect();
-                        return;
-                    }
-
-                    if (await ipClient.ReadAsync(ReceiveBuffer.MemoryBuffer) <= 0)
-                    {
-                        NotifyDisconnect();
-                        return;
-                    }
-
-                    foreach (var receivedMemory in PacketRule.NotifyReceiveData(ReceiveBuffer.MemoryBuffer))
-                    {
-                        DispatchReceiveData(this, receivedMemory);
-                    }
-                }
-                else
-                {
-                    await Task.Delay(1);
-                }
-            }
-
-        }
-
-
-        private void NotifyDisconnect()
-        {
-            if (!IsSelfClose)
-            {
-                ipClient?.Close();
-                DispatchDisconnected(this);
-            }
-        }
+        protected virtual Task ReceivedDatas() => Task.CompletedTask;
     }
 }

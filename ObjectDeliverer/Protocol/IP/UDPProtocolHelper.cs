@@ -1,50 +1,55 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿// Copyright (c) 2020 ayuma_x. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
+using System.Net;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 
 namespace ObjectDeliverer.Protocol.IP
 {
     public class UDPProtocolHelper : IPProtocolHelper
     {
-        protected UdpClient udpClient;
-        private string host = "";
+        private string host = string.Empty;
         private int port = 0;
 
-        public UDPProtocolHelper()
+        public UDPProtocolHelper(int sendBufferSize)
         {
-            udpClient = new UdpClient();
+            this.UdpClient = new UdpClient();
+            this.UdpClient.Client.SendBufferSize = sendBufferSize;
         }
 
-        public UDPProtocolHelper(int boundPort)
+        public UDPProtocolHelper(int boundPort, int receiveBufferSize)
         {
-            udpClient = new UdpClient(boundPort);
+            this.UdpClient = new UdpClient(boundPort);
+            this.UdpClient.Client.ReceiveBufferSize = receiveBufferSize;
         }
 
+        public override int Available => this.UdpClient.Available;
 
-        public override int Available => udpClient.Available;
+        public override bool IsEnable => this.UdpClient != null;
 
-        public override bool IsEnable => udpClient != null;
+        protected UdpClient UdpClient { get; set; }
 
-        public override async ValueTask<int> ReadAsync(Memory<byte> buffer)
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer)
         {
-            var result = await udpClient.ReceiveAsync();
-            if (buffer.Length >= result.Buffer.Length)
-            {
-                ObjectDeliverer.Utils.MemoryExtention.Copy(buffer.Span, result.Buffer);
-                return result.Buffer.Length;
-            }
+            return default(ValueTask<int>);
+        }
 
-            return 0;
+        public override async ValueTask<(byte[] Buffer, EndPoint? RemoteEndPoint)> ReceiveAsync()
+        {
+            var result = await this.UdpClient.ReceiveAsync();
+            return (result.Buffer, result.RemoteEndPoint);
         }
 
         public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer)
         {
-            await udpClient.SendAsync(buffer.ToArray(), buffer.Length);
+            await this.UdpClient.SendAsync(buffer.ToArray(), buffer.Length, this.host, this.port);
         }
 
         public override void Close()
         {
-            udpClient.Close();
+            this.UdpClient.Close();
         }
 
         public override Task ConnectAsync(string host, int port)
