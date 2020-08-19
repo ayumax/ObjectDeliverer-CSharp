@@ -1,5 +1,7 @@
 # ObjectDeliverer-CSharp
 
+![tests](https://github.com/ayumax/ObjectDeliverer-CSharp/workflows/tests/badge.svg?branch=devel)
+
 ## NuGet packages
 [https://www.nuget.org/packages/ObjectDeliverer/](https://www.nuget.org/packages/ObjectDeliverer/)
 
