@@ -58,6 +58,20 @@ namespace ObjectDeliverer.Protocol.Tests
                     {
                         expected[0] = i;
                         await sender.SendAsync(expected);
+
+                        var sw = System.Diagnostics.Stopwatch.StartNew();
+                        await Task.Run(() =>
+                        {
+                            while(condition.CurrentCount != i - 1 && sw.ElapsedMilliseconds < 1000)
+                            {
+                                ;
+                            }
+
+                            if (condition.CurrentCount != i - 1)
+                            {
+                                Assert.Fail();
+                            }
+                        });
                     }
 
                     if (!condition.Wait(1000))

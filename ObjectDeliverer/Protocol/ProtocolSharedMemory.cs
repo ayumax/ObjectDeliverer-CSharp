@@ -118,7 +118,11 @@ namespace ObjectDeliverer.Protocol
 
                 this.sharedMemoryStream.Read(sizeBuffer);
 
+#if SPAN_IS_IMPLEMENTED
                 size = BitConverter.ToInt32(sizeBuffer);
+#else
+                size = BitConverter.ToInt32(sizeBuffer, 0);
+#endif
 
                 if (size == 0 || size > this.receiveBuffer.Length) return;
 

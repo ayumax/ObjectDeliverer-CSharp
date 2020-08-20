@@ -16,11 +16,6 @@ namespace ObjectDeliverer
     {
         internal static int Read(this Stream stream, Span<byte> buffer)
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-
             byte[] array = ArrayPool<byte>.Shared.Rent(buffer.Length);
             try
             {
@@ -36,11 +31,6 @@ namespace ObjectDeliverer
 
         internal static ValueTask<int> ReadAsync(this Stream stream, Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-
             if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> array))
             {
                 return new ValueTask<int>(stream.ReadAsync(array.Array, array.Offset, array.Count, cancellationToken));
@@ -68,11 +58,6 @@ namespace ObjectDeliverer
 
         internal static void Write(this Stream stream, ReadOnlySpan<byte> buffer)
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-
             var sharedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
             try
             {
@@ -85,13 +70,22 @@ namespace ObjectDeliverer
             }
         }
 
+        internal static async ValueTask WriteAsync(this Stream stream, ReadOnlyMemory<byte> buffer)
+        {
+            var sharedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
+            try
+            {
+                buffer.CopyTo(sharedBuffer);
+                await stream.WriteAsync(sharedBuffer, 0, buffer.Length).ConfigureAwait(false);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(sharedBuffer);
+            }
+        }
+
         internal static async ValueTask WriteAsync(this Stream stream, ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-
             var sharedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
             try
             {
@@ -102,6 +96,19 @@ namespace ObjectDeliverer
             {
                 ArrayPool<byte>.Shared.Return(sharedBuffer);
             }
+        }
+
+        internal static ValueTask DisposeAsync(this Stream stream)
+        {
+            stream.Dispose();
+            return default(ValueTask);
+        }
+
+        internal static string GetString(this Encoding encoding, ReadOnlySpan<byte> buffer)
+        {
+            byte[] array = buffer.ToArray();
+
+            return encoding.GetString(array);
         }
     }
 #endif

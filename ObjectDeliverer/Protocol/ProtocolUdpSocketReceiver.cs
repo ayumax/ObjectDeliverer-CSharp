@@ -37,42 +37,52 @@ namespace ObjectDeliverer.Protocol
 
             this.Canceler = new CancellationTokenSource();
 
-            while (this.Canceler!.IsCancellationRequested == false)
+            while (this.Canceler?.IsCancellationRequested == false)
             {
                 if (this.IpClient?.Available > 0)
                 {
-                    this.ReceiveBuffer.SetBufferSize(this.IpClient.Available);
-                    var (recievedBuffer, endPoint) = await this.IpClient.ReceiveAsync();
-                    ReadOnlyMemory<byte> readOnlyMemory = recievedBuffer;
-
-                    int startOffset = 0;
-                    int wantSize = 0;
-                    int remainSize = recievedBuffer.Length;
-
-                    while (remainSize > 0)
+                    try
                     {
-                        wantSize = this.PacketRule.WantSize;
+                        this.ReceiveBuffer.SetBufferSize(this.IpClient.Available);
+                        var (recievedBuffer, endPoint) = await this.IpClient.ReceiveAsync();
 
-                        if (wantSize > remainSize) break;
+                        if (this.Canceler == null || this.IpClient == null) return;
 
-                        if (wantSize > 0)
+                        ReadOnlyMemory<byte> readOnlyMemory = recievedBuffer;
+
+                        int startOffset = 0;
+                        int wantSize = 0;
+                        int remainSize = recievedBuffer.Length;
+
+                        while (remainSize > 0)
                         {
-                            if (remainSize < wantSize) continue;
-                        }
+                            wantSize = this.PacketRule.WantSize;
 
-                        wantSize = wantSize == 0 ? remainSize : wantSize;
+                            if (wantSize > remainSize) break;
 
-                        foreach (var receivedMemory in this.PacketRule.MakeReceivedPacket(readOnlyMemory.Slice(startOffset, wantSize)))
-                        {
-                            this.DispatchReceiveData(new DeliverData()
+                            if (wantSize > 0)
                             {
-                                Sender = this,
-                                Buffer = receivedMemory,
-                            });
-                        }
+                                if (remainSize < wantSize) continue;
+                            }
 
-                        startOffset += wantSize;
-                        remainSize -= wantSize;
+                            wantSize = wantSize == 0 ? remainSize : wantSize;
+
+                            foreach (var receivedMemory in this.PacketRule.MakeReceivedPacket(readOnlyMemory.Slice(startOffset, wantSize)))
+                            {
+                                this.DispatchReceiveData(new DeliverData()
+                                {
+                                    Sender = this,
+                                    Buffer = receivedMemory,
+                                });
+                            }
+
+                            startOffset += wantSize;
+                            remainSize -= wantSize;
+                        }
+                    }
+                   catch(Exception e)
+                    {
+                        System.Diagnostics.Debug.WriteLine(e.Message);
                     }
                 }
                 else
