@@ -53,11 +53,8 @@ namespace ObjectDeliverer.Protocol
 
         public override async ValueTask CloseAsync()
         {
-            this.sharedMemoryMutex?.LockAsync(async () =>
-                {
-                    if (this.pollinger == null) return;
-                    await this.pollinger.DisposeAsync();
-                });
+            if (this.pollinger == null) return;
+            await this.pollinger.DisposeAsync();
 
             this.sharedMemoryMutex?.Dispose();
             this.sharedMemoryMutex = null;

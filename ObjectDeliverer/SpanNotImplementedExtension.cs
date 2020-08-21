@@ -100,15 +100,21 @@ namespace ObjectDeliverer
 
         internal static ValueTask DisposeAsync(this Stream stream)
         {
-            stream.Dispose();
-            return default(ValueTask);
+            return new ValueTask(Task.Run(() => stream.Dispose()));
         }
 
         internal static string GetString(this Encoding encoding, ReadOnlySpan<byte> buffer)
         {
-            byte[] array = buffer.ToArray();
-
-            return encoding.GetString(array);
+            var sharedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
+            try
+            {
+                buffer.CopyTo(sharedBuffer);
+                return encoding.GetString(sharedBuffer, 0, buffer.Length);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(sharedBuffer);
+            }
         }
     }
 #endif
