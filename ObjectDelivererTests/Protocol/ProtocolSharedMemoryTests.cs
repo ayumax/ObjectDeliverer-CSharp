@@ -4,6 +4,7 @@ using ObjectDeliverer.Protocol;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -89,10 +90,13 @@ namespace ObjectDeliverer.Protocol.Tests
         [TestMethod()]
         public async Task InitializeTest()
         {
-            await TestSharedMemoryAsync(new PacketRuleSizeBody());
-            await TestSharedMemoryAsync(new PacketRuleFixedLength() { FixedSize = 3 });
-            await TestSharedMemoryAsync(new PacketRuleNodivision());
-            await TestSharedMemoryAsync(new PacketRuleTerminate() { Terminate = new byte[] { 0xEE, 0xFF } });
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                await TestSharedMemoryAsync(new PacketRuleSizeBody());
+                await TestSharedMemoryAsync(new PacketRuleFixedLength() { FixedSize = 3 });
+                await TestSharedMemoryAsync(new PacketRuleNodivision());
+                await TestSharedMemoryAsync(new PacketRuleTerminate() { Terminate = new byte[] { 0xEE, 0xFF } });
+            }
         }
     }
 }
