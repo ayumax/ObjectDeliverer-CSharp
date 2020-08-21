@@ -60,11 +60,11 @@ namespace ObjectDeliverer.Protocol.Tests
                         await sender.SendAsync(expected);
 
                         var sw = System.Diagnostics.Stopwatch.StartNew();
-                        await Task.Run(() =>
+                        await Task.Run(async () =>
                         {
                             while(condition.CurrentCount != i - 1 && sw.ElapsedMilliseconds < 1000)
                             {
-                                ;
+                                await Task.Delay(1);
                             }
 
                             if (condition.CurrentCount != i - 1)
