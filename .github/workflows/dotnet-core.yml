@@ -11,7 +11,6 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    name: Dotnet ${{ matrix.dotnet }} sample
     steps:
     - uses: actions/checkout@v2
     - name: Setup .NET Core 3.1
