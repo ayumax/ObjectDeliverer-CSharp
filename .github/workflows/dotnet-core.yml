@@ -16,7 +16,7 @@ jobs:
     - name: Setup .NET Core 2.1
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: '2.1.x'
+        dotnet-version: '2.1.809'
     - name: Install dependencies
       run: dotnet restore
     - name: Setup .NET Core 3.1
