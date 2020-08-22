@@ -40,9 +40,12 @@ namespace ObjectDeliverer.Protocol
         {
             List<ValueTask> sendTasks = new List<ValueTask>();
 
-            foreach (var clientSocket in this.connectedSockets)
+            lock (this.connectedSockets)
             {
-                sendTasks.Add(clientSocket.SendAsync(dataBuffer));
+                foreach (var clientSocket in this.connectedSockets)
+                {
+                    sendTasks.Add(clientSocket.SendAsync(dataBuffer));
+                }
             }
 
             return ValueTaskEx.WhenAll(sendTasks);
@@ -60,12 +63,15 @@ namespace ObjectDeliverer.Protocol
                 closeTasks.Add(this.waitClientsTask.DisposeAsync());
             }
 
-            foreach (var clientSocket in this.connectedSockets)
+            lock (this.connectedSockets)
             {
-                closeTasks.Add(clientSocket.DisposeAsync());
-            }
+                foreach (var clientSocket in this.connectedSockets)
+                {
+                    closeTasks.Add(clientSocket.DisposeAsync());
+                }
 
-            this.connectedSockets.Clear();
+                this.connectedSockets.Clear();
+            }
 
             return ValueTaskEx.WhenAll(closeTasks);
         }
@@ -84,7 +90,10 @@ namespace ObjectDeliverer.Protocol
                 clientSocket.ReceiveData.Subscribe(x => this.DispatchReceiveData(x));
                 clientSocket.SetPacketRule(this.PacketRule.Clone());
 
-                this.connectedSockets.Add(clientSocket);
+                lock (this.connectedSockets)
+                {
+                    this.connectedSockets.Add(clientSocket);
+                }
 
                 this.DispatchConnected(clientSocket);
 
@@ -108,15 +117,18 @@ namespace ObjectDeliverer.Protocol
 
             if (delivererProtocol is ProtocolIPSocket protocolTcpIp)
             {
-                int foundIndex = this.connectedSockets.IndexOf(protocolTcpIp);
-                if (foundIndex >= 0)
+                lock (this.connectedSockets)
                 {
-                    this.connectedSockets.RemoveAt(foundIndex);
-
-                    this.DispatchDisconnected(protocolTcpIp);
-
-                    await protocolTcpIp.DisposeAsync();
+                    int foundIndex = this.connectedSockets.IndexOf(protocolTcpIp);
+                    if (foundIndex >= 0)
+                    {
+                        this.connectedSockets.RemoveAt(foundIndex);
+                    }
                 }
+
+                this.DispatchDisconnected(protocolTcpIp);
+
+                await protocolTcpIp.DisposeAsync();
             }
         }
     }
