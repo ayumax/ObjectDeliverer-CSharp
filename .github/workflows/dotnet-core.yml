@@ -35,7 +35,7 @@ jobs:
     - name: Setup .NET Core 3.1
       shell: pwsh
       run: |
-        wget https://dot.net/v1/dotnet-install.ps1
+        curl.exe -LO "https://dot.net/v1/dotnet-install.ps1" 
         ./dotnet-install.ps1 -Channel 3.1
     - name: Install dependencies
       run: dotnet restore
