@@ -7,8 +7,7 @@ on:
     branches: [ devel ]
 
 jobs:
-  build:
-
+  build_linux:
     runs-on: ubuntu-latest
 
     steps:
@@ -27,3 +26,36 @@ jobs:
       run: dotnet build --configuration Release --no-restore
     - name: Test
       run: dotnet test --no-restore --verbosity normal
+  
+  build_windows:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET Core 3.1
+      run: |
+        dotnet-install.ps1 -Channel 3.1
+    - name: Install dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+    - name: Test
+      run: dotnet test --no-restore --verbosity normal
+      
+  build_mac:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET Core 3.1
+      run: |
+        wget https://dotnet.microsoft.com/download/dotnet-core/thank-you/sdk-3.1.401-macos-x64-binaries
+        mkdir -p "$HOME/dotnet" && tar zxf dotnet-sdk-3.1.401-osx-x64.tar.gz -C "$HOME/dotnet"
+        export DOTNET_ROOT=$HOME/dotnet
+        export PATH=$PATH:$HOME/dotnet
+    - name: Install dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+    - name: Test
+      run: dotnet test --no-restore --verbosity normal     
