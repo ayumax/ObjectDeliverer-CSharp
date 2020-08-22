@@ -48,7 +48,12 @@ namespace ObjectDeliverer.Protocol
             this.pollinger = new PollingTask(this.OnReceive);
         }
 
-        public override async ValueTask CloseAsync()
+        public override ValueTask SendAsync(ReadOnlyMemory<byte> dataBuffer)
+        {
+            return default(ValueTask);
+        }
+
+        protected override async ValueTask CloseAsync()
         {
             if (this.pollinger != null)
             {
@@ -61,11 +66,6 @@ namespace ObjectDeliverer.Protocol
                 await this.streamReader.DisposeAsync();
                 this.streamReader = null;
             }
-        }
-
-        public override ValueTask SendAsync(ReadOnlyMemory<byte> dataBuffer)
-        {
-            return default(ValueTask);
         }
 
         private async ValueTask<bool> OnReceive()

@@ -83,8 +83,8 @@ namespace ObjectDeliverer.Protocol.Tests
                 }
             }
 
-            await sender.CloseAsync();
-            await receiver.CloseAsync();
+            await sender.DisposeAsync();
+            await receiver.DisposeAsync();
         }
 
         [TestMethod()]

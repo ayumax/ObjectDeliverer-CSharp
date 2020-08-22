@@ -51,24 +51,6 @@ namespace ObjectDeliverer.Protocol
             this.DispatchConnected(this);
         }
 
-        public override async ValueTask CloseAsync()
-        {
-            if (this.pollinger == null) return;
-            await this.pollinger.DisposeAsync();
-
-            this.sharedMemoryMutex?.Dispose();
-            this.sharedMemoryMutex = null;
-
-            if (this.sharedMemoryStream != null)
-            {
-                await this.sharedMemoryStream.DisposeAsync();
-                this.sharedMemoryStream = null;
-            }
-
-            this.sharedMenmory?.Dispose();
-            this.sharedMenmory = null;
-        }
-
         public override ValueTask SendAsync(ReadOnlyMemory<byte> dataBuffer)
         {
             var sendBuffer = this.PacketRule.MakeSendPacket(dataBuffer);
@@ -94,6 +76,24 @@ namespace ObjectDeliverer.Protocol
 
                 return this.sharedMemoryStream.WriteAsync(sendBuffer);
             });
+        }
+
+        protected override async ValueTask CloseAsync()
+        {
+            if (this.pollinger == null) return;
+            await this.pollinger.DisposeAsync();
+
+            this.sharedMemoryMutex?.Dispose();
+            this.sharedMemoryMutex = null;
+
+            if (this.sharedMemoryStream != null)
+            {
+                await this.sharedMemoryStream.DisposeAsync();
+                this.sharedMemoryStream = null;
+            }
+
+            this.sharedMenmory?.Dispose();
+            this.sharedMenmory = null;
         }
 
         private async ValueTask<bool> OnReceive()

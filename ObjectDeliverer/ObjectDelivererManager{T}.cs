@@ -121,9 +121,7 @@ namespace ObjectDeliverer
 
                 if (this.currentProtocol == null) return;
 
-                await this.currentProtocol.CloseAsync();
-
-                this.currentProtocol.Dispose();
+                await this.currentProtocol.DisposeAsync();
 
                 this.currentProtocol = null;
             }

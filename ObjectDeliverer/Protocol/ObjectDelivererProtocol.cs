@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace ObjectDeliverer.Protocol
 {
-    public abstract class ObjectDelivererProtocol : IDisposable
+    public abstract class ObjectDelivererProtocol : IAsyncDisposable
     {
         private bool disposedValue = false;
         private Subject<ConnectedData> connected = new Subject<ConnectedData>();
@@ -30,8 +30,6 @@ namespace ObjectDeliverer.Protocol
 
         public abstract ValueTask StartAsync();
 
-        public abstract ValueTask CloseAsync();
-
         public abstract ValueTask SendAsync(ReadOnlyMemory<byte> dataBuffer);
 
         public void SetPacketRule(PacketRuleBase packetRule)
@@ -40,13 +38,20 @@ namespace ObjectDeliverer.Protocol
             packetRule.Initialize();
         }
 
-        public void Dispose()
+        public async ValueTask DisposeAsync()
         {
             this.connected.Dispose();
             this.disconnected.Dispose();
             this.receiveData.Dispose();
-            this.Dispose(true);
+
+            if (!this.disposedValue)
+            {
+                await this.CloseAsync();
+                this.disposedValue = true;
+            }
         }
+
+        protected abstract ValueTask CloseAsync();
 
         protected virtual void DispatchConnected(ObjectDelivererProtocol delivererProtocol)
         {
@@ -61,19 +66,6 @@ namespace ObjectDeliverer.Protocol
         protected virtual void DispatchReceiveData(DeliverData deliverData)
         {
             this.receiveData.OnNext(deliverData);
-        }
-
-        protected virtual async void Dispose(bool disposing)
-        {
-            if (!this.disposedValue)
-            {
-                if (disposing)
-                {
-                    await this.CloseAsync();
-                }
-
-                this.disposedValue = true;
-            }
         }
     }
 }

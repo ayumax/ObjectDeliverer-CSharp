@@ -36,7 +36,19 @@ namespace ObjectDeliverer.Protocol
             return default(ValueTask);
         }
 
-        public override ValueTask CloseAsync()
+        public override ValueTask SendAsync(ReadOnlyMemory<byte> dataBuffer)
+        {
+            List<ValueTask> sendTasks = new List<ValueTask>();
+
+            foreach (var clientSocket in this.connectedSockets)
+            {
+                sendTasks.Add(clientSocket.SendAsync(dataBuffer));
+            }
+
+            return ValueTaskEx.WhenAll(sendTasks);
+        }
+
+        protected override ValueTask CloseAsync()
         {
             this.tcpListener?.Stop();
             this.tcpListener = null;
@@ -50,25 +62,12 @@ namespace ObjectDeliverer.Protocol
 
             foreach (var clientSocket in this.connectedSockets)
             {
-                clientSocket.Dispose();
-                closeTasks.Add(clientSocket.CloseAsync());
+                closeTasks.Add(clientSocket.DisposeAsync());
             }
 
             this.connectedSockets.Clear();
 
             return ValueTaskEx.WhenAll(closeTasks);
-        }
-
-        public override ValueTask SendAsync(ReadOnlyMemory<byte> dataBuffer)
-        {
-            List<ValueTask> sendTasks = new List<ValueTask>();
-
-            foreach (var clientSocket in this.connectedSockets)
-            {
-                sendTasks.Add(clientSocket.SendAsync(dataBuffer));
-            }
-
-            return ValueTaskEx.WhenAll(sendTasks);
         }
 
         private async ValueTask<bool> OnAcceptTcpClientAsync()
@@ -103,7 +102,7 @@ namespace ObjectDeliverer.Protocol
             return true;
         }
 
-        private void ClientSocket_Disconnected(ObjectDelivererProtocol delivererProtocol)
+        private async void ClientSocket_Disconnected(ObjectDelivererProtocol delivererProtocol)
         {
             if (delivererProtocol == null) return;
 
@@ -112,7 +111,7 @@ namespace ObjectDeliverer.Protocol
                 int foundIndex = this.connectedSockets.IndexOf(protocolTcpIp);
                 if (foundIndex >= 0)
                 {
-                    protocolTcpIp.Dispose();
+                    await protocolTcpIp.DisposeAsync();
 
                     this.connectedSockets.RemoveAt(foundIndex);
 

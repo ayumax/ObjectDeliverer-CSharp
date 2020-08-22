@@ -31,15 +31,6 @@ namespace ObjectDeliverer.Protocol
             this.DispatchConnected(this);
         }
 
-        public override async ValueTask CloseAsync()
-        {
-            if (this.streamWriter != null)
-            {
-                await this.streamWriter.DisposeAsync();
-                this.streamWriter = null;
-            }
-        }
-
         public override async ValueTask SendAsync(ReadOnlyMemory<byte> dataBuffer)
         {
             if (this.streamWriter == null) return;
@@ -49,6 +40,15 @@ namespace ObjectDeliverer.Protocol
             await this.streamWriter.WriteDoubleAsync((double)this.stopwatch.ElapsedMilliseconds);
             await this.streamWriter.WriteIntAsync(sendBuffer.Length);
             await this.streamWriter.WriteAsync(sendBuffer);
+        }
+
+        protected override async ValueTask CloseAsync()
+        {
+            if (this.streamWriter != null)
+            {
+                await this.streamWriter.DisposeAsync();
+                this.streamWriter = null;
+            }
         }
     }
 }

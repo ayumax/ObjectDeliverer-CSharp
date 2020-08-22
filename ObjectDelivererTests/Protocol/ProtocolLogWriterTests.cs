@@ -42,7 +42,7 @@ namespace ObjectDeliverer.Protocol.Tests
                     await sender.SendAsync(expected);
                 }
 
-                await sender.CloseAsync();
+                await sender.DisposeAsync();
             }
 
             {
@@ -75,7 +75,7 @@ namespace ObjectDeliverer.Protocol.Tests
                         Assert.Fail();
                     }
 
-                    await reader.CloseAsync();
+                    await reader.DisposeAsync();
                 }
             }
         }

@@ -28,7 +28,7 @@ namespace ObjectDeliverer.Protocol
             this.StartConnect();
         }
 
-        public override async ValueTask CloseAsync()
+        protected override async ValueTask CloseAsync()
         {
             await base.CloseAsync();
 
