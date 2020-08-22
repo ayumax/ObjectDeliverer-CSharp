@@ -14,9 +14,13 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Setup .NET Core 3.1
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: '3.1.x'
+      run: |
+        wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+        sudo dpkg -i packages-microsoft-prod.deb
+        sudo apt-get update
+        sudo apt-get install -y apt-transport-https
+        sudo apt-get update
+        sudo apt-get install -y dotnet-sdk-3.1
     - name: Install dependencies
       run: dotnet restore
     - name: Build
