@@ -33,7 +33,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Setup .NET Core 3.1
-    - shell: bash
+      shell: bash
       run: |
         wget https://dot.net/v1/dotnet-install.ps1
         ./dotnet-install.ps1 -Channel 3.1
