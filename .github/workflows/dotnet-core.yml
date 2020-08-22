@@ -34,6 +34,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: Setup .NET Core 3.1
       run: |
+        wget https://dot.net/v1/dotnet-install.ps1
         dotnet-install.ps1 -Channel 3.1
     - name: Install dependencies
       run: dotnet restore
@@ -49,7 +50,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: Setup .NET Core 3.1
       run: |
-        wget https://dotnet.microsoft.com/download/dotnet-core/thank-you/sdk-3.1.401-macos-x64-binaries
+        wget https://download.visualstudio.microsoft.com/download/pr/e1f6e8dc-833f-46aa-866b-40b9bc68ed0f/6540a60960a6489061a08a9ccd3935cd/dotnet-sdk-3.1.401-osx-x64.tar.gz
         mkdir -p "$HOME/dotnet" && tar zxf dotnet-sdk-3.1.401-osx-x64.tar.gz -C "$HOME/dotnet"
         export DOTNET_ROOT=$HOME/dotnet
         export PATH=$PATH:$HOME/dotnet
