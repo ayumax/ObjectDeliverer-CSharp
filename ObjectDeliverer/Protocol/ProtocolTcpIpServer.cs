@@ -111,11 +111,11 @@ namespace ObjectDeliverer.Protocol
                 int foundIndex = this.connectedSockets.IndexOf(protocolTcpIp);
                 if (foundIndex >= 0)
                 {
-                    await protocolTcpIp.DisposeAsync();
-
                     this.connectedSockets.RemoveAt(foundIndex);
 
                     this.DispatchDisconnected(protocolTcpIp);
+
+                    await protocolTcpIp.DisposeAsync();
                 }
             }
         }
