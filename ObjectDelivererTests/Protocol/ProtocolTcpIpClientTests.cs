@@ -118,7 +118,7 @@ namespace ObjectDeliverer.Protocol.Tests
 
                     await server.StartAsync();
 
-                    if (!condition.Wait(1000))
+                    if (!condition.Wait(5000))
                     {
                         Assert.Fail();
                     }

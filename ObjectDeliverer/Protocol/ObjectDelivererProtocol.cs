@@ -40,12 +40,16 @@ namespace ObjectDeliverer.Protocol
 
         public async ValueTask DisposeAsync()
         {
-            this.connected.Dispose();
-            this.disconnected.Dispose();
-            this.receiveData.Dispose();
-
             if (!this.disposedValue)
             {
+                this.connected.Dispose();
+                this.disconnected.Dispose();
+                this.receiveData.Dispose();
+
+                this.connected = null!;
+                this.disconnected = null!;
+                this.receiveData = null!;
+
                 await this.CloseAsync();
                 this.disposedValue = true;
             }
@@ -55,17 +59,17 @@ namespace ObjectDeliverer.Protocol
 
         protected virtual void DispatchConnected(ObjectDelivererProtocol delivererProtocol)
         {
-            this.connected.OnNext(new ConnectedData() { Target = delivererProtocol });
+            this.connected?.OnNext(new ConnectedData() { Target = delivererProtocol });
         }
 
         protected virtual void DispatchDisconnected(ObjectDelivererProtocol delivererProtocol)
         {
-            this.disconnected.OnNext(new ConnectedData() { Target = delivererProtocol });
+            this.disconnected?.OnNext(new ConnectedData() { Target = delivererProtocol });
         }
 
         protected virtual void DispatchReceiveData(DeliverData deliverData)
         {
-            this.receiveData.OnNext(deliverData);
+            this.receiveData?.OnNext(deliverData);
         }
     }
 }

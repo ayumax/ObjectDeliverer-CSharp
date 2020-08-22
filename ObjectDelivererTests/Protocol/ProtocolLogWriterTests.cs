@@ -61,6 +61,7 @@ namespace ObjectDeliverer.Protocol.Tests
                     var expected2 = new byte[] { (byte)condition.CurrentCount, 2, 3 };
                     Assert.IsTrue(x.Buffer.ToArray().SequenceEqual(expected2));
                     condition.Signal();
+                    System.Diagnostics.Debug.WriteLine(condition.CurrentCount);
                 }))
                 {
                     await reader.StartAsync();
@@ -73,10 +74,10 @@ namespace ObjectDeliverer.Protocol.Tests
                     if (!condition.Wait(1000))
                     {
                         Assert.Fail();
-                    }
-
-                    await reader.DisposeAsync();
+                    }   
                 }
+
+                await reader.DisposeAsync();
             }
         }
 
