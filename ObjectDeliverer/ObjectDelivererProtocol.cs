@@ -9,7 +9,6 @@ namespace ObjectDeliverer
 {
     public abstract class ObjectDelivererProtocol : IAsyncDisposable
     {
-        private bool disposedValue = false;
         private Subject<ConnectedData> connected = new Subject<ConnectedData>();
         private Subject<ConnectedData> disconnected = new Subject<ConnectedData>();
         private Subject<DeliverData> receiveData = new Subject<DeliverData>();
@@ -23,6 +22,8 @@ namespace ObjectDeliverer
         public IObservable<ConnectedData> Disconnected => this.disconnected;
 
         public IObservable<DeliverData> ReceiveData => this.receiveData;
+
+        protected bool DisposedValue { get; private set; } = false;
 
         protected IPacketRule PacketRule { get; set; } = new PacketRuleNodivision();
 
@@ -38,7 +39,7 @@ namespace ObjectDeliverer
 
         public async ValueTask DisposeAsync()
         {
-            if (!this.disposedValue)
+            if (!this.DisposedValue)
             {
                 this.connected.Dispose();
                 this.disconnected.Dispose();
@@ -49,7 +50,7 @@ namespace ObjectDeliverer
                 this.receiveData = null!;
 
                 await this.CloseAsync();
-                this.disposedValue = true;
+                this.DisposedValue = true;
             }
         }
 

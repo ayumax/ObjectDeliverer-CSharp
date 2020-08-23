@@ -114,7 +114,6 @@ namespace ObjectDeliverer
         {
             async ValueTask ConnectAsync()
             {
-                await this.CloseAsync();
                 this.IsSelfClose = false;
 
                 this.IpClient = new TCPProtocolHelper(this.ReceiveBufferSize, this.SendBufferSize);

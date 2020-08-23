@@ -115,6 +115,14 @@ namespace ObjectDeliverer
             {
                 this.disposedValue = true;
 
+                this.connected.Dispose();
+                this.disconnected.Dispose();
+                this.receiveData.Dispose();
+
+                this.connected = null!;
+                this.disconnected = null!;
+                this.receiveData = null!;
+
                 if (this.currentProtocol == null) return;
 
                 await this.currentProtocol.DisposeAsync();
