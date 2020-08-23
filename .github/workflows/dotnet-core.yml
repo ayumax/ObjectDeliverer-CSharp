@@ -28,6 +28,8 @@ jobs:
         TestFrameworks: netcoreapp3.1;netcoreapp2.1
     - name: Test
       run: dotnet test --no-restore --verbosity normal
+      env: 
+        TestFrameworks: netcoreapp3.1;netcoreapp2.1
       
   
   build_windows:
@@ -66,3 +68,5 @@ jobs:
         TestFrameworks: netcoreapp3.1;netcoreapp2.1
     - name: Test
       run: dotnet test --no-restore --verbosity normal   
+      env: 
+        TestFrameworks: netcoreapp3.1;netcoreapp2.1
