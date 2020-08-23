@@ -2,14 +2,12 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
-    <DefineConstants Condition=" '$(TargetFramework)' == 'netcoreapp2.1' ">$(DefineConstants);SPAN_IS_IMPLEMENTED</DefineConstants>
-    <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
     <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
     <PackageId>ObjectDeliverer</PackageId>
-    <Version>0.0.10</Version>
+    <Version>0.1.0</Version>
     <Authors>ayumax</Authors>
     <Company>ayumax</Company>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -42,7 +40,7 @@
   
 
   <ItemGroup>
-    <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.205">
+    <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.164">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

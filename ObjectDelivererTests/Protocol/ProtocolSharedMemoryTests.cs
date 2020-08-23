@@ -57,7 +57,7 @@ namespace ObjectDeliverer.Protocol.Tests
                 {
                     await sender.SendAsync(expected);
 
-                    if (!condition.Wait(1000))
+                    if (!condition.Wait(3000))
                     {
                         Assert.Fail();
                     }
@@ -76,7 +76,7 @@ namespace ObjectDeliverer.Protocol.Tests
                 {
                     await receiver.SendAsync(expected);
 
-                    if (!condition.Wait(1000))
+                    if (!condition.Wait(3000))
                     {
                         Assert.Fail();
                     }

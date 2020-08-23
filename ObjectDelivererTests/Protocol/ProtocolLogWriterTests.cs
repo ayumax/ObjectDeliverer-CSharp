@@ -71,7 +71,7 @@ namespace ObjectDeliverer.Protocol.Tests
                         Assert.Fail();
                     }
 
-                    if (!condition.Wait(1000))
+                    if (!condition.Wait(3000))
                     {
                         Assert.Fail();
                     }   
