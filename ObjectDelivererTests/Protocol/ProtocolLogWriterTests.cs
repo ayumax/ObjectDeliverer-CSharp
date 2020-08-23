@@ -13,7 +13,7 @@ namespace ObjectDeliverer.Protocol.Tests
     [TestClass()]
     public class ProtocolLogWriterTests
     {
-        private async Task TestLogFileAsync(PacketRuleBase packetRule)
+        private async Task TestLogFileAsync(IPacketRule packetRule)
         {
             var tempFilePath = System.IO.Path.GetTempFileName();
 

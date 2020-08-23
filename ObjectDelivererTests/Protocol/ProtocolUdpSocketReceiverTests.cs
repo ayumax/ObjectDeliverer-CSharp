@@ -13,7 +13,7 @@ namespace ObjectDeliverer.Protocol.Tests
     [TestClass()]
     public class ProtocolUdpSocketReceiverTests
     {
-        private async Task TestUDPAsync(PacketRuleBase packetRule)
+        private async Task TestUDPAsync(IPacketRule packetRule)
         {
             CountdownEvent condition0 = new CountdownEvent(2);
 

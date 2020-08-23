@@ -1,13 +1,11 @@
 // Copyright (c) 2020 ayuma_x. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using ObjectDeliverer.PacketRule;
 using System;
-using System.Collections.Generic;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
 
-namespace ObjectDeliverer.Protocol
+namespace ObjectDeliverer
 {
     public abstract class ObjectDelivererProtocol : IAsyncDisposable
     {
@@ -26,13 +24,13 @@ namespace ObjectDeliverer.Protocol
 
         public IObservable<DeliverData> ReceiveData => this.receiveData;
 
-        protected PacketRuleBase PacketRule { get; set; } = new PacketRuleNodivision();
+        protected IPacketRule PacketRule { get; set; } = new PacketRuleNodivision();
 
         public abstract ValueTask StartAsync();
 
         public abstract ValueTask SendAsync(ReadOnlyMemory<byte> dataBuffer);
 
-        public void SetPacketRule(PacketRuleBase packetRule)
+        public void SetPacketRule(IPacketRule packetRule)
         {
             this.PacketRule = packetRule;
             packetRule.Initialize();

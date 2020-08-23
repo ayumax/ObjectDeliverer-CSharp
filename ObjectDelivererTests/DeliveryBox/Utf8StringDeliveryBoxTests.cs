@@ -14,7 +14,7 @@ namespace ObjectDeliverer.DeliveryBox.Tests
         {
             string checkString = "ABCDEFG_012345_@!#$%&\r\nZXCVB";
 
-            var deliveryBox = new Utf8StringDeliveryBox();
+            var deliveryBox = new DeliveryBoxString();
 
             var buffer = deliveryBox.MakeSendBuffer(checkString);
 

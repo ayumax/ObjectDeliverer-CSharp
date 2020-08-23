@@ -1,12 +1,8 @@
 ﻿// Copyright (c) 2020 ayuma_x. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using ObjectDeliverer.DeliveryBox;
-using ObjectDeliverer.PacketRule;
-using ObjectDeliverer.Protocol;
 using System;
 using System.Collections.Generic;
-using System.Reactive;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
 
@@ -15,7 +11,7 @@ namespace ObjectDeliverer
     public class ObjectDelivererManager<T> : IAsyncDisposable
     {
         private ObjectDelivererProtocol? currentProtocol;
-        private DeliveryBoxBase<T>? deliveryBox;
+        private IDeliveryBox<T>? deliveryBox;
         private bool disposedValue = false;
 
         private Subject<ConnectedData> connected = new Subject<ConnectedData>();
@@ -38,7 +34,7 @@ namespace ObjectDeliverer
 
         public static ObjectDelivererManager<T> CreateObjectDelivererManager() => new ObjectDelivererManager<T>();
 
-        public ValueTask StartAsync(ObjectDelivererProtocol protocol, PacketRuleBase packetRule, DeliveryBoxBase<T>? deliveryBox = null)
+        public ValueTask StartAsync(ObjectDelivererProtocol protocol, IPacketRule packetRule, IDeliveryBox<T>? deliveryBox = null)
         {
             if (protocol == null || packetRule == null) return default(ValueTask);
 

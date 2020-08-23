@@ -13,7 +13,7 @@ namespace ObjectDeliverer.Protocol.Tests
     [TestClass()]
     public class ProtocolTcpIpClientTests
     {
-        private async Task TestTCPAsync(PacketRuleBase packetRule)
+        private async Task TestTCPAsync(IPacketRule packetRule)
         {
             CountdownEvent condition0 = new CountdownEvent(2);
 

@@ -14,7 +14,7 @@ namespace ObjectDeliverer.Protocol.Tests
     [TestClass()]
     public class ProtocolSharedMemoryTests
     {
-        private async Task TestSharedMemoryAsync(PacketRuleBase packetRule)
+        private async Task TestSharedMemoryAsync(IPacketRule packetRule)
         {
             CountdownEvent condition0 = new CountdownEvent(2);
 
