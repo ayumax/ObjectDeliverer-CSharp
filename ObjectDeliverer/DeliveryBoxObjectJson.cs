@@ -1,23 +1,20 @@
 // Copyright (c) 2020 ayuma_x. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using ObjectDeliverer.Protocol;
 using System;
-using System.Collections.Generic;
 using System.Text.Json;
-using System.Threading.Tasks;
 
-namespace ObjectDeliverer.DeliveryBox
+namespace ObjectDeliverer
 {
-    public class ObjectDeliveryBoxUsingJson<T> : DeliveryBoxBase<T>
+    public class DeliveryBoxObjectJson<T> : IDeliveryBox<T>
     {
-        public ObjectDeliveryBoxUsingJson()
+        public DeliveryBoxObjectJson()
         {
         }
 
-        public override ReadOnlyMemory<byte> MakeSendBuffer(T message) => JsonSerializer.SerializeToUtf8Bytes<T>(message);
+        public ReadOnlyMemory<byte> MakeSendBuffer(T message) => JsonSerializer.SerializeToUtf8Bytes<T>(message);
 
-        public override T BufferToMessage(ReadOnlyMemory<byte> buffer)
+        public T BufferToMessage(ReadOnlyMemory<byte> buffer)
         {
             if (buffer.Span[buffer.Length - 1] == 0x00)
             {

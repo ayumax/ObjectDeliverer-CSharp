@@ -1,16 +1,12 @@
 // Copyright (c) 2020 ayuma_x. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-
+using ObjectDeliverer.Protocol;
 using ObjectDeliverer.Protocol.IP;
-using ObjectDeliverer.Utils;
 using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ObjectDeliverer.Protocol
+namespace ObjectDeliverer
 {
     public class ProtocolUdpSocketReceiver : ProtocolIPSocket
     {
@@ -37,12 +33,15 @@ namespace ObjectDeliverer.Protocol
 
             this.Canceler = new CancellationTokenSource();
 
-            while (this.Canceler!.IsCancellationRequested == false)
+            while (this.Canceler?.IsCancellationRequested == false)
             {
                 if (this.IpClient?.Available > 0)
                 {
                     this.ReceiveBuffer.SetBufferSize(this.IpClient.Available);
                     var (recievedBuffer, endPoint) = await this.IpClient.ReceiveAsync();
+
+                    if (this.Canceler == null || this.IpClient == null) return;
+
                     ReadOnlyMemory<byte> readOnlyMemory = recievedBuffer;
 
                     int startOffset = 0;

@@ -1,17 +1,12 @@
 // Copyright (c) 2020 ayuma_x. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-
-using ObjectDeliverer.Protocol.IP;
 using ObjectDeliverer.Utils;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
-namespace ObjectDeliverer.Protocol
+namespace ObjectDeliverer
 {
     public class ProtocolLogWriter : ObjectDelivererProtocol
     {
@@ -31,15 +26,6 @@ namespace ObjectDeliverer.Protocol
             this.DispatchConnected(this);
         }
 
-        public override async ValueTask CloseAsync()
-        {
-            if (this.streamWriter != null)
-            {
-                await this.streamWriter.DisposeAsync();
-                this.streamWriter = null;
-            }
-        }
-
         public override async ValueTask SendAsync(ReadOnlyMemory<byte> dataBuffer)
         {
             if (this.streamWriter == null) return;
@@ -49,6 +35,15 @@ namespace ObjectDeliverer.Protocol
             await this.streamWriter.WriteDoubleAsync((double)this.stopwatch.ElapsedMilliseconds);
             await this.streamWriter.WriteIntAsync(sendBuffer.Length);
             await this.streamWriter.WriteAsync(sendBuffer);
+        }
+
+        protected override async ValueTask CloseAsync()
+        {
+            if (this.streamWriter != null)
+            {
+                await this.streamWriter.DisposeAsync();
+                this.streamWriter = null;
+            }
         }
     }
 }

@@ -33,22 +33,6 @@ namespace ObjectDeliverer.Protocol
             return default(ValueTask);
         }
 
-        public override ValueTask CloseAsync()
-        {
-            if (this.IpClient == null) return default(ValueTask);
-
-            this.IsSelfClose = true;
-
-            this.IpClient.Close();
-
-            this.Canceler?.Cancel();
-
-            this.IpClient = null;
-            this.Canceler = null;
-
-            return default(ValueTask);
-        }
-
         public override ValueTask SendAsync(ReadOnlyMemory<byte> dataBuffer)
         {
             if (this.IpClient == null) return default(ValueTask);
@@ -65,6 +49,22 @@ namespace ObjectDeliverer.Protocol
             this.ReceiveBuffer.SetBufferSize(1024);
 
             this.receiveTask = this.ReceivedDatas();
+        }
+
+        protected override ValueTask CloseAsync()
+        {
+            if (this.IpClient == null) return default(ValueTask);
+
+            this.IsSelfClose = true;
+
+            this.IpClient.Close();
+
+            this.Canceler?.Cancel();
+
+            this.IpClient = null;
+            this.Canceler = null;
+
+            return default(ValueTask);
         }
 
         protected virtual Task ReceivedDatas() => Task.CompletedTask;

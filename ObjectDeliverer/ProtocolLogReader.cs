@@ -1,17 +1,12 @@
 // Copyright (c) 2020 ayuma_x. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-
-using ObjectDeliverer.Protocol.IP;
 using ObjectDeliverer.Utils;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
-namespace ObjectDeliverer.Protocol
+namespace ObjectDeliverer
 {
     public class ProtocolLogReader : ObjectDelivererProtocol
     {
@@ -48,7 +43,12 @@ namespace ObjectDeliverer.Protocol
             this.pollinger = new PollingTask(this.OnReceive);
         }
 
-        public override async ValueTask CloseAsync()
+        public override ValueTask SendAsync(ReadOnlyMemory<byte> dataBuffer)
+        {
+            return default(ValueTask);
+        }
+
+        protected override async ValueTask CloseAsync()
         {
             if (this.pollinger != null)
             {
@@ -61,11 +61,6 @@ namespace ObjectDeliverer.Protocol
                 await this.streamReader.DisposeAsync();
                 this.streamReader = null;
             }
-        }
-
-        public override ValueTask SendAsync(ReadOnlyMemory<byte> dataBuffer)
-        {
-            return default(ValueTask);
         }
 
         private async ValueTask<bool> OnReceive()

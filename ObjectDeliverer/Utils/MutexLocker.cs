@@ -33,15 +33,31 @@ namespace ObjectDeliverer.Utils
 
         public async ValueTask LockAsync(Func<ValueTask> action)
         {
+            System.Diagnostics.Debug.WriteLine("MutexLocker.WaitOne before");
+
             this.mutex.WaitOne();
+            System.Diagnostics.Debug.WriteLine("MutexLocker.WaitOne after");
 
             try
             {
                 await action.Invoke();
             }
+            catch (Exception e)
+            {
+                System.Diagnostics.Debug.WriteLine(e.Message);
+            }
             finally
             {
-                this.mutex.ReleaseMutex();
+                try
+                {
+                    System.Diagnostics.Debug.WriteLine("MutexLocker.ReleaseMutex before");
+                    this.mutex.ReleaseMutex();
+                    System.Diagnostics.Debug.WriteLine("MutexLocker.ReleaseMutex after");
+                }
+                catch (Exception e)
+                {
+                    System.Diagnostics.Debug.WriteLine(e.Message);
+                }
             }
         }
 

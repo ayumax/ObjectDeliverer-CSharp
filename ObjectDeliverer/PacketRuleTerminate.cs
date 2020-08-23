@@ -4,11 +4,10 @@
 using ObjectDeliverer.Utils;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
-namespace ObjectDeliverer.PacketRule
+namespace ObjectDeliverer
 {
-    public class PacketRuleTerminate : PacketRuleBase
+    public class PacketRuleTerminate : IPacketRule
     {
         private readonly GrowBuffer bufferForSend = new GrowBuffer();
         private readonly GrowBuffer receiveTempBuffer = new GrowBuffer();
@@ -16,16 +15,16 @@ namespace ObjectDeliverer.PacketRule
 
         public byte[] Terminate { get; set; } = new byte[0];
 
-        public override int WantSize => 0;
+        public int WantSize => 0;
 
-        public override void Initialize()
+        public void Initialize()
         {
             this.bufferForSend.SetBufferSize(0);
             this.receiveTempBuffer.SetBufferSize(0);
             this.bufferForReceive.SetBufferSize(0);
         }
 
-        public override ReadOnlyMemory<byte> MakeSendPacket(ReadOnlyMemory<byte> bodyBuffer)
+        public ReadOnlyMemory<byte> MakeSendPacket(ReadOnlyMemory<byte> bodyBuffer)
         {
             var sendSize = bodyBuffer.Length + this.Terminate.Length;
             this.bufferForSend.SetBufferSize(sendSize);
@@ -36,7 +35,7 @@ namespace ObjectDeliverer.PacketRule
             return this.bufferForSend.MemoryBuffer;
         }
 
-        public override IEnumerable<ReadOnlyMemory<byte>> MakeReceivedPacket(ReadOnlyMemory<byte> dataBuffer)
+        public IEnumerable<ReadOnlyMemory<byte>> MakeReceivedPacket(ReadOnlyMemory<byte> dataBuffer)
         {
             if (this.WantSize > 0 && dataBuffer.Length != this.WantSize) yield break;
 
@@ -81,7 +80,7 @@ namespace ObjectDeliverer.PacketRule
             }
         }
 
-        public override PacketRuleBase Clone() => new PacketRuleTerminate()
+        public IPacketRule Clone() => new PacketRuleTerminate()
         {
             Terminate = this.Terminate,
         };

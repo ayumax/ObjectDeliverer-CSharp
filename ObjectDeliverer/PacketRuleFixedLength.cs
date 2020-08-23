@@ -4,24 +4,23 @@
 using ObjectDeliverer.Utils;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
-namespace ObjectDeliverer.PacketRule
+namespace ObjectDeliverer
 {
-    public class PacketRuleFixedLength : PacketRuleBase
+    public class PacketRuleFixedLength : IPacketRule
     {
         private readonly GrowBuffer bufferForSend = new GrowBuffer();
 
         public int FixedSize { get; set; } = 128;
 
-        public override int WantSize => this.FixedSize;
+        public int WantSize => this.FixedSize;
 
-        public override void Initialize()
+        public void Initialize()
         {
             this.bufferForSend.SetBufferSize(this.FixedSize);
         }
 
-        public override ReadOnlyMemory<byte> MakeSendPacket(ReadOnlyMemory<byte> bodyBuffer)
+        public ReadOnlyMemory<byte> MakeSendPacket(ReadOnlyMemory<byte> bodyBuffer)
         {
             this.bufferForSend.Clear();
 
@@ -31,13 +30,13 @@ namespace ObjectDeliverer.PacketRule
             return this.bufferForSend.MemoryBuffer;
         }
 
-        public override IEnumerable<ReadOnlyMemory<byte>> MakeReceivedPacket(ReadOnlyMemory<byte> dataBuffer)
+        public IEnumerable<ReadOnlyMemory<byte>> MakeReceivedPacket(ReadOnlyMemory<byte> dataBuffer)
         {
             if (this.WantSize > 0 && dataBuffer.Length != this.WantSize) yield break;
             yield return dataBuffer;
         }
 
-        public override PacketRuleBase Clone() => new PacketRuleFixedLength()
+        public IPacketRule Clone() => new PacketRuleFixedLength()
         {
             FixedSize = this.FixedSize,
         };

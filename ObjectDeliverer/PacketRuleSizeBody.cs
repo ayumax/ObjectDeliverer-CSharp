@@ -4,9 +4,8 @@
 using ObjectDeliverer.Utils;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
-namespace ObjectDeliverer.PacketRule
+namespace ObjectDeliverer
 {
     public enum ECNBufferEndian
     {
@@ -16,7 +15,7 @@ namespace ObjectDeliverer.PacketRule
         Little,
     }
 
-    public class PacketRuleSizeBody : PacketRuleBase
+    public class PacketRuleSizeBody : IPacketRule
     {
         private readonly GrowBuffer bufferForSend = new GrowBuffer();
         private EReceiveMode receiveMode = EReceiveMode.Size;
@@ -32,7 +31,7 @@ namespace ObjectDeliverer.PacketRule
 
         public ECNBufferEndian SizeBufferEndian { get; set; } = ECNBufferEndian.Big;
 
-        public override int WantSize
+        public int WantSize
         {
             get
             {
@@ -45,14 +44,14 @@ namespace ObjectDeliverer.PacketRule
             }
         }
 
-        public override void Initialize()
+        public void Initialize()
         {
             this.bufferForSend.SetBufferSize(1024);
             this.receiveMode = EReceiveMode.Size;
             this.bodySize = 0;
         }
 
-        public override ReadOnlyMemory<byte> MakeSendPacket(ReadOnlyMemory<byte> bodyBuffer)
+        public ReadOnlyMemory<byte> MakeSendPacket(ReadOnlyMemory<byte> bodyBuffer)
         {
             var bodyBufferNum = bodyBuffer.Length;
             var sendSize = bodyBufferNum + this.SizeLength;
@@ -79,7 +78,7 @@ namespace ObjectDeliverer.PacketRule
             return this.bufferForSend.MemoryBuffer;
         }
 
-        public override IEnumerable<ReadOnlyMemory<byte>> MakeReceivedPacket(ReadOnlyMemory<byte> dataBuffer)
+        public IEnumerable<ReadOnlyMemory<byte>> MakeReceivedPacket(ReadOnlyMemory<byte> dataBuffer)
         {
             if (this.WantSize > 0 && dataBuffer.Length != this.WantSize) yield break;
 
@@ -122,7 +121,7 @@ namespace ObjectDeliverer.PacketRule
             this.receiveMode = EReceiveMode.Size;
         }
 
-        public override PacketRuleBase Clone() => new PacketRuleSizeBody()
+        public IPacketRule Clone() => new PacketRuleSizeBody()
         {
             SizeLength = this.SizeLength,
             SizeBufferEndian = this.SizeBufferEndian,
