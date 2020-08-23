@@ -13,7 +13,7 @@ namespace ObjectDeliverer.Protocol.Tests
     [TestClass()]
     public class ProtocolTcpIpClientTests
     {
-        private async Task TestTCPAsync(PacketRuleBase packetRule)
+        private async Task TestTCPAsync(IPacketRule packetRule)
         {
             CountdownEvent condition0 = new CountdownEvent(2);
 
@@ -61,7 +61,7 @@ namespace ObjectDeliverer.Protocol.Tests
                         await client.SendAsync(expected);
                     }
 
-                    if (!condition.Wait(1000))
+                    if (!condition.Wait(3000))
                     {
                         Assert.Fail();
                     }
@@ -97,7 +97,7 @@ namespace ObjectDeliverer.Protocol.Tests
                 using (var condition = new CountdownEvent(1))
                 using (client.Disconnected.Subscribe(x => condition.Signal()))
                 {
-                    await server.CloseAsync();
+                    await server.DisposeAsync();
 
                     if (!condition.Wait(1000))
                     {
@@ -110,9 +110,15 @@ namespace ObjectDeliverer.Protocol.Tests
                 using (var condition = new CountdownEvent(1))
                 using (client.Connected.Subscribe(x => condition.Signal()))
                 {
+                    server = new ProtocolTcpIpServer()
+                    {
+                        ListenPort = 9013,
+                    };
+                    server.SetPacketRule(packetRule.Clone());
+
                     await server.StartAsync();
 
-                    if (!condition.Wait(1000))
+                    if (!condition.Wait(5000))
                     {
                         Assert.Fail();
                     }
@@ -121,7 +127,7 @@ namespace ObjectDeliverer.Protocol.Tests
                 using (var condition = new CountdownEvent(1))
                 using (server.Disconnected.Subscribe(x => condition.Signal()))
                 {
-                    await client.CloseAsync();
+                    await client.DisposeAsync();
 
                     if (!condition.Wait(1000))
                     {
@@ -130,8 +136,8 @@ namespace ObjectDeliverer.Protocol.Tests
                 }
             }
 
-            await client.CloseAsync();
-            await server.CloseAsync();
+            await client.DisposeAsync();
+            await server.DisposeAsync();
         }
 
         [TestMethod()]

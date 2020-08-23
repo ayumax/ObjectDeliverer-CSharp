@@ -20,7 +20,7 @@ namespace ObjectDeliverer.DeliveryBox.Tests
         public void ConvertBufferTest()
         {
             {
-                var deliveryBox = new ObjectDeliveryBoxUsingJson<TestObject>();
+                var deliveryBox = new DeliveryBoxObjectJson<TestObject>();
 
                 var testObj = new TestObject()
                 {

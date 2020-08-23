@@ -1,17 +1,16 @@
 // Copyright (c) 2020 ayuma_x. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-
+using ObjectDeliverer.Protocol;
 using ObjectDeliverer.Protocol.IP;
 using ObjectDeliverer.Utils;
 using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading;
 using System.Threading.Tasks;
 using ValueTaskSupplement;
 
-namespace ObjectDeliverer.Protocol
+namespace ObjectDeliverer
 {
     public class ProtocolTcpIpServer : ObjectDelivererProtocol
     {
@@ -36,7 +35,22 @@ namespace ObjectDeliverer.Protocol
             return default(ValueTask);
         }
 
-        public override ValueTask CloseAsync()
+        public override ValueTask SendAsync(ReadOnlyMemory<byte> dataBuffer)
+        {
+            List<ValueTask> sendTasks = new List<ValueTask>();
+
+            lock (this.connectedSockets)
+            {
+                foreach (var clientSocket in this.connectedSockets)
+                {
+                    sendTasks.Add(clientSocket.SendAsync(dataBuffer));
+                }
+            }
+
+            return ValueTaskEx.WhenAll(sendTasks);
+        }
+
+        protected override ValueTask CloseAsync()
         {
             this.tcpListener?.Stop();
             this.tcpListener = null;
@@ -48,27 +62,17 @@ namespace ObjectDeliverer.Protocol
                 closeTasks.Add(this.waitClientsTask.DisposeAsync());
             }
 
-            foreach (var clientSocket in this.connectedSockets)
+            lock (this.connectedSockets)
             {
-                clientSocket.Dispose();
-                closeTasks.Add(clientSocket.CloseAsync());
-            }
+                foreach (var clientSocket in this.connectedSockets)
+                {
+                    closeTasks.Add(clientSocket.DisposeAsync());
+                }
 
-            this.connectedSockets.Clear();
+                this.connectedSockets.Clear();
+            }
 
             return ValueTaskEx.WhenAll(closeTasks);
-        }
-
-        public override ValueTask SendAsync(ReadOnlyMemory<byte> dataBuffer)
-        {
-            List<ValueTask> sendTasks = new List<ValueTask>();
-
-            foreach (var clientSocket in this.connectedSockets)
-            {
-                sendTasks.Add(clientSocket.SendAsync(dataBuffer));
-            }
-
-            return ValueTaskEx.WhenAll(sendTasks);
         }
 
         private async ValueTask<bool> OnAcceptTcpClientAsync()
@@ -85,7 +89,10 @@ namespace ObjectDeliverer.Protocol
                 clientSocket.ReceiveData.Subscribe(x => this.DispatchReceiveData(x));
                 clientSocket.SetPacketRule(this.PacketRule.Clone());
 
-                this.connectedSockets.Add(clientSocket);
+                lock (this.connectedSockets)
+                {
+                    this.connectedSockets.Add(clientSocket);
+                }
 
                 this.DispatchConnected(clientSocket);
 
@@ -103,21 +110,24 @@ namespace ObjectDeliverer.Protocol
             return true;
         }
 
-        private void ClientSocket_Disconnected(ObjectDelivererProtocol delivererProtocol)
+        private async void ClientSocket_Disconnected(ObjectDelivererProtocol delivererProtocol)
         {
             if (delivererProtocol == null) return;
 
             if (delivererProtocol is ProtocolIPSocket protocolTcpIp)
             {
-                int foundIndex = this.connectedSockets.IndexOf(protocolTcpIp);
-                if (foundIndex >= 0)
+                lock (this.connectedSockets)
                 {
-                    protocolTcpIp.Dispose();
-
-                    this.connectedSockets.RemoveAt(foundIndex);
-
-                    this.DispatchDisconnected(protocolTcpIp);
+                    int foundIndex = this.connectedSockets.IndexOf(protocolTcpIp);
+                    if (foundIndex >= 0)
+                    {
+                        this.connectedSockets.RemoveAt(foundIndex);
+                    }
                 }
+
+                this.DispatchDisconnected(protocolTcpIp);
+
+                await protocolTcpIp.DisposeAsync();
             }
         }
     }

@@ -1,16 +1,12 @@
 // Copyright (c) 2020 ayuma_x. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using ObjectDeliverer.Protocol.IP;
 using ObjectDeliverer.Utils;
 using System;
-using System.Collections.Generic;
 using System.IO.MemoryMappedFiles;
-using System.Net.Sockets;
-using System.Threading;
 using System.Threading.Tasks;
 
-namespace ObjectDeliverer.Protocol
+namespace ObjectDeliverer
 {
     public class ProtocolSharedMemory : ObjectDelivererProtocol
     {
@@ -51,27 +47,6 @@ namespace ObjectDeliverer.Protocol
             this.DispatchConnected(this);
         }
 
-        public override async ValueTask CloseAsync()
-        {
-            this.sharedMemoryMutex?.LockAsync(async () =>
-                {
-                    if (this.pollinger == null) return;
-                    await this.pollinger.DisposeAsync();
-                });
-
-            this.sharedMemoryMutex?.Dispose();
-            this.sharedMemoryMutex = null;
-
-            if (this.sharedMemoryStream != null)
-            {
-                await this.sharedMemoryStream.DisposeAsync();
-                this.sharedMemoryStream = null;
-            }
-
-            this.sharedMenmory?.Dispose();
-            this.sharedMenmory = null;
-        }
-
         public override ValueTask SendAsync(ReadOnlyMemory<byte> dataBuffer)
         {
             var sendBuffer = this.PacketRule.MakeSendPacket(dataBuffer);
@@ -99,6 +74,24 @@ namespace ObjectDeliverer.Protocol
             });
         }
 
+        protected override async ValueTask CloseAsync()
+        {
+            if (this.pollinger == null) return;
+            await this.pollinger.DisposeAsync();
+
+            this.sharedMemoryMutex?.Dispose();
+            this.sharedMemoryMutex = null;
+
+            if (this.sharedMemoryStream != null)
+            {
+                await this.sharedMemoryStream.DisposeAsync();
+                this.sharedMemoryStream = null;
+            }
+
+            this.sharedMenmory?.Dispose();
+            this.sharedMenmory = null;
+        }
+
         private async ValueTask<bool> OnReceive()
         {
             if (this.sharedMemoryMutex == null || this.sharedMemoryStream == null) return false;
@@ -118,7 +111,11 @@ namespace ObjectDeliverer.Protocol
 
                 this.sharedMemoryStream.Read(sizeBuffer);
 
+#if SPAN_IS_IMPLEMENTED
                 size = BitConverter.ToInt32(sizeBuffer);
+#else
+                size = BitConverter.ToInt32(sizeBuffer, 0);
+#endif
 
                 if (size == 0 || size > this.receiveBuffer.Length) return;
 

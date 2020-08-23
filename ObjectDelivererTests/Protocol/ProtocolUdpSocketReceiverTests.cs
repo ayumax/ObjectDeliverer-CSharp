@@ -13,7 +13,7 @@ namespace ObjectDeliverer.Protocol.Tests
     [TestClass()]
     public class ProtocolUdpSocketReceiverTests
     {
-        private async Task TestUDPAsync(PacketRuleBase packetRule)
+        private async Task TestUDPAsync(IPacketRule packetRule)
         {
             CountdownEvent condition0 = new CountdownEvent(2);
 
@@ -58,6 +58,20 @@ namespace ObjectDeliverer.Protocol.Tests
                     {
                         expected[0] = i;
                         await sender.SendAsync(expected);
+
+                        var sw = System.Diagnostics.Stopwatch.StartNew();
+                        await Task.Run(async () =>
+                        {
+                            while(condition.CurrentCount != i - 1 && sw.ElapsedMilliseconds < 1000)
+                            {
+                                await Task.Delay(1);
+                            }
+
+                            if (condition.CurrentCount != i - 1)
+                            {
+                                Assert.Fail();
+                            }
+                        });
                     }
 
                     if (!condition.Wait(1000))
@@ -67,8 +81,8 @@ namespace ObjectDeliverer.Protocol.Tests
                 }
             }
 
-            await sender.CloseAsync();
-            await receiver.CloseAsync();
+            await sender.DisposeAsync();
+            await receiver.DisposeAsync();
         }
 
         [TestMethod()]

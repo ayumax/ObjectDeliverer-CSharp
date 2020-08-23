@@ -7,19 +7,66 @@ on:
     branches: [ devel ]
 
 jobs:
-  build:
-
+  build_linux:
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
-    - name: Setup .NET Core
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: 3.1.301
+    - name: Setup .NET Core 3.1
+      run: |
+        wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+        sudo dpkg -i packages-microsoft-prod.deb
+        sudo apt-get update
+        sudo apt-get install -y apt-transport-https
+        sudo apt-get update
+        sudo apt-get install -y dotnet-sdk-3.1
+    - name: Install dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+      env: 
+        TestFrameworks: netcoreapp3.1;netcoreapp2.1
+    - name: Test
+      run: dotnet test --no-restore --verbosity normal
+      env: 
+        TestFrameworks: netcoreapp3.1;netcoreapp2.1
+      
+  
+  build_windows:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET Core 3.1
+      shell: pwsh
+      run: |
+        curl.exe -LO "https://dot.net/v1/dotnet-install.ps1" 
+        ./dotnet-install.ps1 -Channel 3.1
     - name: Install dependencies
       run: dotnet restore
     - name: Build
       run: dotnet build --configuration Release --no-restore
     - name: Test
       run: dotnet test --no-restore --verbosity normal
+      
+  build_mac:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET Core 3.1
+      run: |
+        wget https://download.visualstudio.microsoft.com/download/pr/e1f6e8dc-833f-46aa-866b-40b9bc68ed0f/6540a60960a6489061a08a9ccd3935cd/dotnet-sdk-3.1.401-osx-x64.tar.gz
+        mkdir -p "$HOME/dotnet" && tar zxf dotnet-sdk-3.1.401-osx-x64.tar.gz -C "$HOME/dotnet"
+        export DOTNET_ROOT=$HOME/dotnet
+        export PATH=$PATH:$HOME/dotnet
+    - name: Install dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+      env: 
+        TestFrameworks: netcoreapp3.1;netcoreapp2.1
+    - name: Test
+      run: dotnet test --no-restore --verbosity normal   
+      env: 
+        TestFrameworks: netcoreapp3.1;netcoreapp2.1

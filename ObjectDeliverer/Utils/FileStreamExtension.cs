@@ -20,20 +20,32 @@ namespace ObjectDeliverer.Utils
         {
             if (stream.RemainSize() < sizeof(int)) return 0;
 
+#if SPAN_IS_IMPLEMENTED
             Memory<byte> buffer = new byte[sizeof(int)];
             await stream.ReadAsync(buffer);
 
             return BitConverter.ToInt32(buffer.Span);
+#else
+            byte[] buffer = new byte[sizeof(int)];
+            await stream.ReadAsync(buffer);
+            return BitConverter.ToInt32(buffer, 0);
+#endif
         }
 
         public static async ValueTask<double> ReadDoubleAsync(this FileStream stream)
         {
             if (stream.RemainSize() < sizeof(double)) return 0;
 
+#if SPAN_IS_IMPLEMENTED
             Memory<byte> buffer = new byte[sizeof(double)];
             await stream.ReadAsync(buffer);
 
             return BitConverter.ToDouble(buffer.Span);
+#else
+            byte[] buffer = new byte[sizeof(double)];
+            await stream.ReadAsync(buffer);
+            return BitConverter.ToDouble(buffer, 0);
+#endif
         }
 
         public static async ValueTask WriteIntAsync(this FileStream stream, int intValue)

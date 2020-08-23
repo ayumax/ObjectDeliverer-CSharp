@@ -87,7 +87,7 @@ deliverer.ReceiveData.Subscribe(x =>
 await deliverer.StartAsync(
     new ProtocolTcpIpClient() { IpAddress = "127.0.0.1", Port = 9013 },
     new PacketRuleFixedLength() { FixedSize = 10 },
-    new Utf8StringDeliveryBox());
+    new DeliveryBoxString());
 
 ```
 
@@ -168,7 +168,7 @@ var deliverer = new ObjectDelivererManager<string>();
 await deliverer.StartAsync(
     new ProtocolTcpIpClient() { IpAddress = "127.0.0.1", Port = 9013 },
     new PacketRuleFixedLength() { FixedSize = 10 },
-    new Utf8StringDeliveryBox());
+    new DeliveryBoxString());
 
 deliverer.ReceiveData.Subscribe(x => Console.WriteLine(x.Message));
 
@@ -191,7 +191,7 @@ var deliverer = new ObjectDelivererManager<SampleObj>();
 await deliverer.StartAsync(
     new ProtocolTcpIpClient() { IpAddress = "127.0.0.1", Port = 9013 },
     new PacketRuleSizeBody() { SizeLength = 4, SizeBufferEndian = ECNBufferEndian.Big },
-    new ObjectDeliveryBoxUsingJson<SampleObj>());
+    new DeliveryBoxObjectJson<SampleObj>());
 
 deliverer.ReceiveData.Subscribe(x => Console.WriteLine(x.Message.Hoge()));
 
@@ -219,7 +219,7 @@ public class SampleObj2
 }
 
 // Definition of DeliveryBox using MessagePack
-public class ObjectDeliveryBoxUsingMessagePack<T> : DeliveryBoxBase<T>
+public class ObjectDeliveryBoxUsingMessagePack<T> : IDeliveryBox<T>
 {
     public override ReadOnlyMemory<byte> MakeSendBuffer(T message) => MessagePackSerializer.Serialize(message);
 

@@ -13,7 +13,7 @@ namespace ObjectDeliverer.Protocol.Tests
     [TestClass()]
     public class ProtocolLogWriterTests
     {
-        private async Task TestLogFileAsync(PacketRuleBase packetRule)
+        private async Task TestLogFileAsync(IPacketRule packetRule)
         {
             var tempFilePath = System.IO.Path.GetTempFileName();
 
@@ -42,7 +42,7 @@ namespace ObjectDeliverer.Protocol.Tests
                     await sender.SendAsync(expected);
                 }
 
-                await sender.CloseAsync();
+                await sender.DisposeAsync();
             }
 
             {
@@ -61,6 +61,7 @@ namespace ObjectDeliverer.Protocol.Tests
                     var expected2 = new byte[] { (byte)condition.CurrentCount, 2, 3 };
                     Assert.IsTrue(x.Buffer.ToArray().SequenceEqual(expected2));
                     condition.Signal();
+                    System.Diagnostics.Debug.WriteLine(condition.CurrentCount);
                 }))
                 {
                     await reader.StartAsync();
@@ -73,10 +74,10 @@ namespace ObjectDeliverer.Protocol.Tests
                     if (!condition.Wait(1000))
                     {
                         Assert.Fail();
-                    }
-
-                    await reader.CloseAsync();
+                    }   
                 }
+
+                await reader.DisposeAsync();
             }
         }
 
