@@ -61,7 +61,7 @@ namespace ObjectDeliverer.Protocol.Tests
                         await client.SendAsync(expected);
                     }
 
-                    if (!condition.Wait(1000))
+                    if (!condition.Wait(3000))
                     {
                         Assert.Fail();
                     }
