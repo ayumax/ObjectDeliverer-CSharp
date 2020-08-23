@@ -1,0 +1,28 @@
+name: tests
+
+on:
+  push:
+    branches: [ master ]
+jobs:
+  publish:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET Core 3.1
+      shell: pwsh
+      run: |
+        curl.exe -LO "https://dot.net/v1/dotnet-install.ps1" 
+        ./dotnet-install.ps1 -Channel 3.1
+    - name: Install dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+    - name: Test
+      run: dotnet test --no-restore --verbosity normal
+    - name: Publish to nuget
+      uses: brandedoutcast/publish-nuget@v2.5.2
+      with:
+          PROJECT_FILE_PATH: ObjectDeliverer\ObjectDeliverer.csproj
+          NUGET_KEY: ${{secrets.NUGET_API_KEY}}
+      
