@@ -65,6 +65,7 @@ namespace ObjectDeliverer
 
         private async ValueTask<bool> OnReceive()
         {
+            if (this.DisposedValue == true) return false;
             if (this.streamReader == null) return false;
 
             while (this.streamReader.RemainSize() > 0 || this.currentLogTime >= 0)
