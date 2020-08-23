@@ -24,10 +24,11 @@ jobs:
       run: dotnet restore
     - name: Build
       run: dotnet build --configuration Release --no-restore
-    - name: Test
-      run: dotnet test --no-restore --verbosity normal
       env: 
         TestFrameworks: netcoreapp3.1;netcoreapp2.1
+    - name: Test
+      run: dotnet test --no-restore --verbosity normal
+      
   
   build_windows:
     runs-on: windows-latest
@@ -61,7 +62,7 @@ jobs:
       run: dotnet restore
     - name: Build
       run: dotnet build --configuration Release --no-restore
-    - name: Test
-      run: dotnet test --no-restore --verbosity normal   
       env: 
         TestFrameworks: netcoreapp3.1;netcoreapp2.1
+    - name: Test
+      run: dotnet test --no-restore --verbosity normal   
