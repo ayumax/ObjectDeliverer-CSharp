@@ -4,7 +4,7 @@ on:
   push:
     branches: [ master ]
 jobs:
-  publish:
+  test:
     runs-on: windows-latest
 
     steps:
@@ -20,9 +20,9 @@ jobs:
       run: dotnet build --configuration Release --no-restore
     - name: Test
       run: dotnet test --no-restore --verbosity normal
-    - name: Publish to nuget
+    - if: success()
+      name: Publish to nuget
       uses: brandedoutcast/publish-nuget@v2.5.2
       with:
           PROJECT_FILE_PATH: ObjectDeliverer\ObjectDeliverer.csproj
-          NUGET_KEY: ${{secrets.NUGET_API_KEY}}
-      
+          NUGET_KEY: ${{secrets.NUGET_API_KEY}}     
