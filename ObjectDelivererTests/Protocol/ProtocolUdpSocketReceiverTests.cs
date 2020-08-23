@@ -37,7 +37,7 @@ namespace ObjectDeliverer.Protocol.Tests
 
                 await receiver.StartAsync();
 
-                if (!condition0.Wait(1000))
+                if (!condition0.Wait(3000))
                 {
                     Assert.Fail();
                 }
@@ -62,7 +62,7 @@ namespace ObjectDeliverer.Protocol.Tests
                         var sw = System.Diagnostics.Stopwatch.StartNew();
                         await Task.Run(async () =>
                         {
-                            while(condition.CurrentCount != i - 1 && sw.ElapsedMilliseconds < 1000)
+                            while(condition.CurrentCount != i - 1 && sw.ElapsedMilliseconds < 3000)
                             {
                                 await Task.Delay(1);
                             }
@@ -74,7 +74,7 @@ namespace ObjectDeliverer.Protocol.Tests
                         });
                     }
 
-                    if (!condition.Wait(1000))
+                    if (!condition.Wait(3000))
                     {
                         Assert.Fail();
                     }

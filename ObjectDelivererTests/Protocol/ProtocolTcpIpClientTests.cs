@@ -99,7 +99,7 @@ namespace ObjectDeliverer.Protocol.Tests
                 {
                     await server.DisposeAsync();
 
-                    if (!condition.Wait(1000))
+                    if (!condition.Wait(3000))
                     {
                         Assert.Fail();
                     }
@@ -129,7 +129,7 @@ namespace ObjectDeliverer.Protocol.Tests
                 {
                     await client.DisposeAsync();
 
-                    if (!condition.Wait(1000))
+                    if (!condition.Wait(3000))
                     {
                         Assert.Fail();
                     }
